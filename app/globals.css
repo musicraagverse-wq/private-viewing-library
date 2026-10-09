@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply bg-screen text-cream font-sans antialiased;
+  background-image:
+    radial-gradient(1000px 400px at 50% -10%, rgba(245, 165, 36, 0.07), transparent),
+    radial-gradient(700px 300px at 90% 110%, rgba(245, 165, 36, 0.04), transparent);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(245, 165, 36, 0.35);
+}
+
+/* Slim scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3226 transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #3a3226;
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Theater card: warm panel, subtle rope border */
+.ticket {
+  @apply bg-lounge border border-rope rounded-lg;
+}
+
+.ticket-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.ticket-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(245, 165, 36, 0.14);
+  border-color: rgba(245, 165, 36, 0.5);
+}
+
+/* Marquee glow text */
+.marquee-text {
+  color: #f5a524;
+  text-shadow: 0 0 18px rgba(245, 165, 36, 0.45);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
