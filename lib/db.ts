@@ -82,7 +82,7 @@ export async function getDuplicatesOf(
 export async function getPlatforms(): Promise<{ platform: string; c: number }[]> {
   return (await sql`
     SELECT platform, COUNT(*) AS c FROM dramas
-    WHERE COALESCE(is_duplicate,0) = 0 AND has_videos = 1 AND platform IS NOT NULL AND platform != ''
+    WHERE COALESCE(is_duplicate,0) = 0 AND platform IS NOT NULL AND platform != ''
     GROUP BY platform ORDER BY c DESC
   `) as { platform: string; c: number }[];
 }

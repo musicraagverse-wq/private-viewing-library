@@ -2,6 +2,7 @@ import Link from "next/link";
 import { browseDramas, countDramas, getPlatforms, getSources, getContinueWatching, getStats, getMarathons, getFreshArrivals, getGenres, getTropes, pingDb } from "@/lib/db";
 import DramaCard, { Poster } from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
+import BrowseTabs from "@/components/BrowseTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -122,62 +123,25 @@ export default async function Home({
         </div>
       )}
 
-      {/* Browse by Category / Platform / Trope */}
+      {/* Browse by Category / Platform / Trope - Tabbed */}
       {!q && !source && !platform && (
-        <section className="space-y-4">
-          <div>
-            <h2 className="mb-2 font-display text-xl font-extrabold">🎭 Genres</h2>
-            <div className="flex flex-wrap gap-2">
-              {genres.slice(0, 15).map((g) => (
-                <Link
-                  key={g.genre}
-                  href={`/genre/${encodeURIComponent(g.genre)}`}
-                  className="rounded-full border-2 border-edge bg-denlight px-4 py-1.5 text-xs font-extrabold text-cream hover:border-pop hover:text-pop"
-                >
-                  {g.genre} <span className="text-muted">({g.c.toLocaleString()})</span>
-                </Link>
-              ))}
-              {genres.length > 15 && (
-                <Link href="/explore" className="rounded-full border-2 border-pop bg-pop/20 px-4 py-1.5 text-xs font-extrabold text-pop">
-                  More →
-                </Link>
-              )}
-            </div>
-          </div>
-          <div>
-            <h2 className="mb-2 font-display text-xl font-extrabold">📱 Platforms</h2>
-            <div className="flex flex-wrap gap-2">
-              {platforms.slice(0, 10).map((p) => (
-                <Link
-                  key={p.platform}
-                  href={href(base, { platform: p.platform, page: undefined })}
-                  className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${platform === p.platform ? "border-teal bg-teal/20 text-teal" : "border-edge bg-denlight text-cream hover:border-teal hover:text-teal"}`}
-                >
-                  {p.platform} <span className="text-muted">({p.c.toLocaleString()})</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-          <div>
-            <h2 className="mb-2 font-display text-xl font-extrabold">🔥 Tropes</h2>
-            <div className="flex flex-wrap gap-2">
-              {tropes.slice(0, 15).map((t) => (
-                <Link
-                  key={t.trope}
-                  href={`/trope/${encodeURIComponent(t.trope)}`}
-                  className="rounded-full border-2 border-edge bg-denlight px-4 py-1.5 text-xs font-extrabold text-cream hover:border-sunny hover:text-sunny"
-                >
-                  {t.trope} <span className="text-muted">({t.c.toLocaleString()})</span>
-                </Link>
-              ))}
-              {tropes.length > 15 && (
-                <Link href="/explore" className="rounded-full border-2 border-sunny bg-sunny/20 px-4 py-1.5 text-xs font-extrabold text-sunny">
-                  More →
-                </Link>
-              )}
-            </div>
-          </div>
-        </section>
+        <BrowseTabs
+          genres={genres.slice(0, 30).map((g) => ({
+            name: g.genre,
+            count: g.c,
+            href: `/genre/${encodeURIComponent(g.genre)}`,
+          }))}
+          platforms={platforms.slice(0, 30).map((p) => ({
+            name: p.platform,
+            count: p.c,
+            href: href(base, { platform: p.platform, page: undefined }),
+          }))}
+          tropes={tropes.slice(0, 30).map((t) => ({
+            name: t.trope,
+            count: t.c,
+            href: `/trope/${encodeURIComponent(t.trope)}`,
+          }))}
+        />
       )}
 
       {/* Continue watching */}
