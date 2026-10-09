@@ -62,12 +62,12 @@ export default async function Home({
     <div className="space-y-8">
       {/* Hero / search */}
       <section>
-        <h1 className="font-display text-3xl tracking-wide sm:text-4xl">
-          Now <span className="marquee-text">Showing</span>
+        <h1 className="font-display text-4xl font-extrabold tracking-tight sm:text-5xl">
+          🎭 <span className="pop-text">The Drama Den</span>
         </h1>
-        <p className="mt-2 text-sm text-muted">
-          {stats.total.toLocaleString()} titles · {stats.withVideos.toLocaleString()} playable
-          {stats.withAlt > 0 && ` · ${stats.withAlt.toLocaleString()} alt source`}
+        <p className="mt-2 text-sm font-semibold text-muted">
+          {stats.total.toLocaleString()} dramas · {stats.withVideos.toLocaleString()} ready to watch
+          {stats.withAlt > 0 && ` · ${stats.withAlt.toLocaleString()} with backup`}
         </p>
         <form action="/" method="get" className="mt-4 flex gap-2">
           {source && <input type="hidden" name="source" value={source} />}
@@ -77,20 +77,20 @@ export default async function Home({
             type="search"
             name="q"
             defaultValue={q}
-            placeholder="Search titles…"
-            className="w-full rounded-lg border border-rope bg-lounge px-4 py-2.5 text-sm text-cream placeholder:text-muted/60 focus:border-marquee/60 focus:outline-none"
+            placeholder="🔍 Find your next obsession…"
+            className="w-full rounded-den border-2 border-edge bg-denlight px-5 py-3 text-sm font-semibold text-cream placeholder:text-muted/60 focus:border-pop focus:outline-none"
           />
-          <button type="submit" className="rounded-lg bg-marquee px-5 py-2.5 text-sm font-bold text-screen hover:bg-spotlight">
-            Search
+          <button type="submit" className="rounded-den bg-pop px-6 py-3 text-sm font-extrabold text-white hover:bg-popdark">
+            Go!
           </button>
         </form>
 
         {/* Filters */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wide text-muted">Source:</span>
+          <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Source:</span>
           <Link
             href={href(base, { source: undefined, page: undefined })}
-            className={`rounded-full border px-3 py-1 text-xs font-bold ${!source ? "border-marquee/60 bg-marquee/15 text-marquee" : "border-rope text-muted hover:text-marquee"}`}
+            className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${!source ? "border-pop bg-pop/20 text-pop" : "border-edge text-muted hover:text-pop"}`}
           >
             All
           </Link>
@@ -98,60 +98,44 @@ export default async function Home({
             <Link
               key={s.source}
               href={href(base, { source: s.source, page: undefined })}
-              className={`rounded-full border px-3 py-1 text-xs font-bold ${source === s.source ? "border-marquee/60 bg-marquee/15 text-marquee" : "border-rope text-muted hover:text-marquee"}`}
+              className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${source === s.source ? "border-pop bg-pop/20 text-pop" : "border-edge text-muted hover:text-pop"}`}
             >
               {s.source} ({s.c.toLocaleString()})
             </Link>
           ))}
-          <span className="ml-2 text-xs font-bold uppercase tracking-wide text-muted">Platform:</span>
-          <Link
-            href={href(base, { platform: undefined, page: undefined })}
-            className={`rounded-full border px-3 py-1 text-xs font-bold ${!platform ? "border-marquee/60 bg-marquee/15 text-marquee" : "border-rope text-muted hover:text-marquee"}`}
-          >
-            All
-          </Link>
-          {platforms.slice(0, 8).map((p) => (
-            <Link
-              key={p.platform}
-              href={href(base, { platform: p.platform, page: undefined })}
-              className={`rounded-full border px-3 py-1 text-xs font-bold ${platform === p.platform ? "border-marquee/60 bg-marquee/15 text-marquee" : "border-rope text-muted hover:text-marquee"}`}
-            >
-              {p.platform} ({p.c.toLocaleString()})
-            </Link>
-          ))}
           <Link
             href={href(base, { videos: onlyWithVideos ? undefined : "1", page: undefined })}
-            className={`rounded-full border px-3 py-1 text-xs font-bold ${onlyWithVideos ? "border-marquee/60 bg-marquee/15 text-marquee" : "border-rope text-muted hover:text-marquee"}`}
+            className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${onlyWithVideos ? "border-teal bg-teal/20 text-teal" : "border-edge text-muted hover:text-teal"}`}
           >
-            ▶ Playable only
+            ▶ Watchable only
           </Link>
         </div>
       </section>
 
       {dbError && (
-        <div className="rounded-lg border border-rope bg-lounge p-6 text-center text-sm text-marquee">
-          Library is busy (import in progress). Please refresh in a moment.
+        <div className="den-card p-6 text-center text-sm font-bold text-sunny">
+          Busy right now — give it a moment and refresh! 🔄
         </div>
       )}
 
       {/* Continue watching */}
       {continueWatching.length > 0 && (
         <section>
-          <h2 className="mb-3 font-display text-xl tracking-wide">Continue Watching</h2>
+          <h2 className="mb-3 font-display text-2xl font-extrabold">📺 Continue Watching</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
             {continueWatching.map((d) => (
               <Link
                 key={d.id}
                 href={`/watch/${encodeURIComponent(d.id)}/${d.episode}`}
-                className="ticket ticket-hover group overflow-hidden"
+                className="den-card den-card-hover group"
               >
                 <div className="relative aspect-[3/4]">
                   <Poster title={d.title} posterUrl={d.poster_url} className="h-full w-full" />
-                  <div className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-center text-[11px] font-bold text-marquee">
+                  <div className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-center text-[11px] font-extrabold text-sunny">
                     EP {d.episode}
                   </div>
                 </div>
-                <div className="line-clamp-1 p-2 text-xs font-bold text-cream group-hover:text-marquee">
+                <div className="line-clamp-1 p-2 text-xs font-extrabold text-cream group-hover:text-pop">
                   {d.title}
                 </div>
               </Link>
@@ -162,12 +146,12 @@ export default async function Home({
 
       {/* Grid */}
       <section>
-        <h2 className="mb-3 font-display text-xl tracking-wide">
-          {q ? `Results for “${q}”` : "The Collection"} <span className="text-sm font-normal text-muted">({total.toLocaleString()})</span>
+        <h2 className="mb-3 font-display text-2xl font-extrabold">
+          {q ? `🔍 “${q}”` : "✨ All Dramas"} <span className="text-sm font-bold text-muted">({total.toLocaleString()})</span>
         </h2>
         {dramas.length === 0 && !dbError ? (
-          <div className="rounded-lg border border-rope bg-lounge p-10 text-center text-sm text-muted">
-            No titles found. Try a different search or clear the filters.
+          <div className="den-card p-10 text-center text-sm font-bold text-muted">
+            Nothing found! Try a different search 🎭
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
@@ -188,8 +172,8 @@ export default async function Home({
       {!q && !source && !platform && marathons.length > 0 && (
         <section>
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="font-display text-xl tracking-wide">🎬 Marathon Picks</h2>
-            <span className="text-xs text-muted">Longest series for binge-watching</span>
+            <h2 className="font-display text-2xl font-extrabold">🎬 Marathon Picks</h2>
+            <span className="text-xs font-bold text-muted">Longest series for binge sessions</span>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {marathons.map((d) => (
@@ -203,8 +187,8 @@ export default async function Home({
       {!q && !source && !platform && freshArrivals.length > 0 && (
         <section>
           <div className="mb-3 flex items-baseline justify-between">
-            <h2 className="font-display text-xl tracking-wide">✨ Fresh Arrivals</h2>
-            <span className="text-xs text-muted">Recently added to the library</span>
+            <h2 className="font-display text-2xl font-extrabold">✨ Fresh Arrivals</h2>
+            <span className="text-xs font-bold text-muted">Just added to the Den</span>
           </div>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {freshArrivals.map((d) => (

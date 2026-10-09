@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Nunito:wght@400;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -11,52 +13,55 @@ html {
 }
 
 body {
-  @apply bg-screen text-cream font-sans antialiased;
+  @apply bg-den text-cream font-sans antialiased;
   background-image:
-    radial-gradient(1000px 400px at 50% -10%, rgba(245, 165, 36, 0.07), transparent),
-    radial-gradient(700px 300px at 90% 110%, rgba(245, 165, 36, 0.04), transparent);
+    radial-gradient(800px 400px at 20% 0%, rgba(255, 77, 141, 0.15), transparent),
+    radial-gradient(600px 300px at 80% 20%, rgba(168, 85, 247, 0.12), transparent),
+    radial-gradient(500px 250px at 50% 100%, rgba(45, 212, 191, 0.08), transparent);
   background-attachment: fixed;
 }
 
 ::selection {
-  background: rgba(245, 165, 36, 0.35);
+  background: rgba(255, 77, 141, 0.4);
 }
 
 /* Slim scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #3a3226 transparent;
+  scrollbar-color: #4a2d7a transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #3a3226;
+  background: #4a2d7a;
   border-radius: 8px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 
-/* Theater card: warm panel, subtle rope border */
-.ticket {
-  @apply bg-lounge border border-rope rounded-lg;
+/* Den card: vibrant with playful border */
+.den-card {
+  @apply bg-card border-2 border-edge rounded-den overflow-hidden;
 }
 
-.ticket-hover {
+.den-card-hover {
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
-.ticket-hover:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 32px rgba(245, 165, 36, 0.14);
-  border-color: rgba(245, 165, 36, 0.5);
+.den-card-hover:hover {
+  transform: translateY(-4px) rotate(-0.5deg);
+  box-shadow: 0 16px 40px rgba(255, 77, 141, 0.25);
+  border-color: #ff4d8d;
 }
 
-/* Marquee glow text */
-.marquee-text {
-  color: #f5a524;
-  text-shadow: 0 0 18px rgba(245, 165, 36, 0.45);
+/* Fun gradient text */
+.pop-text {
+  background: linear-gradient(135deg, #ff4d8d, #ffd93d, #2dd4bf);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .no-scrollbar::-webkit-scrollbar {

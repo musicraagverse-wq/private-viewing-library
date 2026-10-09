@@ -23,7 +23,7 @@ export default function LoginPage() {
       router.push("/");
       router.refresh();
     } else {
-      setError("Wrong password. Try again.");
+      setError("Wrong password. Try again! 🎭");
     }
   }
 
@@ -31,27 +31,27 @@ export default function LoginPage() {
     <div className="flex min-h-[60vh] items-center justify-center">
       <form
         onSubmit={submit}
-        className="ticket w-full max-w-sm p-8"
+        className="den-card w-full max-w-sm p-8"
       >
-        <h1 className="mb-1 font-display text-xl tracking-wide">
-          <span className="marquee-text">◈ MY THEATER</span>
+        <h1 className="mb-1 font-display text-2xl font-extrabold">
+          🎭 <span className="pop-text">The Drama Den</span>
         </h1>
-        <p className="mb-6 text-sm text-muted">Enter the theater password.</p>
+        <p className="mb-6 text-sm font-semibold text-muted">Enter the secret password! 🤫</p>
         <input
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
           autoFocus
-          className="mb-3 w-full rounded-lg border border-rope bg-screen px-4 py-3 text-sm text-cream outline-none placeholder:text-muted/50 focus:border-marquee/60"
+          className="mb-3 w-full rounded-den border-2 border-edge bg-den px-4 py-3 text-sm font-semibold text-cream outline-none placeholder:text-muted/50 focus:border-pop"
         />
-        {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+        {error && <p className="mb-3 text-sm font-bold text-pop">{error}</p>}
         <button
           type="submit"
           disabled={loading || !password}
-          className="w-full rounded-lg bg-marquee px-4 py-3 text-sm font-bold text-screen disabled:opacity-40 hover:bg-spotlight"
+          className="w-full rounded-den bg-pop px-4 py-3 text-sm font-extrabold text-white disabled:opacity-40 hover:bg-popdark"
         >
-          {loading ? "Checking…" : "Enter theater"}
+          {loading ? "Opening… 🎬" : "Enter the Den! 🚀"}
         </button>
       </form>
     </div>

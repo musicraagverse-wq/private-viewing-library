@@ -8,20 +8,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Private theater: warm blacks, amber marquee glow, cream text
-        screen: "#0c0a08",
-        lounge: "#14110c",
-        seat: "#1c1812",
-        rope: "#2e2820",
-        marquee: "#f5a524",
-        marqueeDim: "#b97a1a",
-        spotlight: "#ffd98a",
-        cream: "#f5ead6",
-        muted: "#a89f8d",
+        // The Drama Den: bold, vibrant, fun
+        den: "#1a0b2e",
+        denlight: "#251344",
+        card: "#2d1a4e",
+        edge: "#4a2d7a",
+        pop: "#ff4d8d",
+        popdark: "#e6397a",
+        sunny: "#ffd93d",
+        teal: "#2dd4bf",
+        grape: "#a855f7",
+        cream: "#fff8f0",
+        muted: "#c4b5d9",
       },
       fontFamily: {
-        display: ["Georgia", "'Times New Roman'", "serif"],
-        sans: ["ui-sans-serif", "system-ui", "Segoe UI", "Inter", "sans-serif"],
+        display: ["'Baloo 2'", "'Fredoka'", "ui-rounded", "system-ui", "sans-serif"],
+        sans: ["'Nunito'", "ui-rounded", "system-ui", "sans-serif"],
+      },
+      borderRadius: {
+        'den': '1.5rem',
       },
     },
   },
