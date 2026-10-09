@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { browseDramas, countDramas, getPlatforms, getSources, getContinueWatching, getStats, getMarathons, getFreshArrivals, pingDb } from "@/lib/db";
+import { browseDramas, countDramas, getPlatforms, getSources, getContinueWatching, getStats, getMarathons, getFreshArrivals, getGenres, getTropes, pingDb } from "@/lib/db";
 import DramaCard, { Poster } from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 
@@ -36,11 +36,13 @@ export default async function Home({
   let continueWatching: Awaited<ReturnType<typeof getContinueWatching>> = [];
   let marathons: Awaited<ReturnType<typeof getMarathons>> = [];
   let freshArrivals: Awaited<ReturnType<typeof getFreshArrivals>> = [];
+  let genres: Awaited<ReturnType<typeof getGenres>> = [];
+  let tropes: Awaited<ReturnType<typeof getTropes>> = [];
   let dbError = false;
 
   try {
     await pingDb();
-    [dramas, total, platforms, sources, stats, marathons, freshArrivals] = await Promise.all([
+    [dramas, total, platforms, sources, stats, marathons, freshArrivals, genres, tropes] = await Promise.all([
       browseDramas({ q, source, platform, page, perPage: PER_PAGE, onlyWithVideos }),
       countDramas(q, source, platform),
       getPlatforms(),
@@ -48,6 +50,8 @@ export default async function Home({
       getStats(),
       getMarathons(12),
       getFreshArrivals(12),
+      getGenres(),
+      getTropes(),
     ]);
     if (!q && !source && !platform && page === 1) {
       continueWatching = await getContinueWatching(8);
@@ -86,7 +90,7 @@ export default async function Home({
         </form>
 
         {/* Filters */}
-        <div className="mt-4 flex flex-wrap items-center gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2 font-display">
           <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Source:</span>
           <Link
             href={href(base, { source: undefined, page: undefined })}
@@ -116,6 +120,64 @@ export default async function Home({
         <div className="den-card p-6 text-center text-sm font-bold text-sunny">
           Busy right now — give it a moment and refresh! 🔄
         </div>
+      )}
+
+      {/* Browse by Category / Platform / Trope */}
+      {!q && !source && !platform && (
+        <section className="space-y-4">
+          <div>
+            <h2 className="mb-2 font-display text-xl font-extrabold">🎭 Genres</h2>
+            <div className="flex flex-wrap gap-2">
+              {genres.slice(0, 15).map((g) => (
+                <Link
+                  key={g.genre}
+                  href={`/genre/${encodeURIComponent(g.genre)}`}
+                  className="rounded-full border-2 border-edge bg-denlight px-4 py-1.5 text-xs font-extrabold text-cream hover:border-pop hover:text-pop"
+                >
+                  {g.genre} <span className="text-muted">({g.c.toLocaleString()})</span>
+                </Link>
+              ))}
+              {genres.length > 15 && (
+                <Link href="/explore" className="rounded-full border-2 border-pop bg-pop/20 px-4 py-1.5 text-xs font-extrabold text-pop">
+                  More →
+                </Link>
+              )}
+            </div>
+          </div>
+          <div>
+            <h2 className="mb-2 font-display text-xl font-extrabold">📱 Platforms</h2>
+            <div className="flex flex-wrap gap-2">
+              {platforms.slice(0, 10).map((p) => (
+                <Link
+                  key={p.platform}
+                  href={href(base, { platform: p.platform, page: undefined })}
+                  className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${platform === p.platform ? "border-teal bg-teal/20 text-teal" : "border-edge bg-denlight text-cream hover:border-teal hover:text-teal"}`}
+                >
+                  {p.platform} <span className="text-muted">({p.c.toLocaleString()})</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h2 className="mb-2 font-display text-xl font-extrabold">🔥 Tropes</h2>
+            <div className="flex flex-wrap gap-2">
+              {tropes.slice(0, 15).map((t) => (
+                <Link
+                  key={t.trope}
+                  href={`/trope/${encodeURIComponent(t.trope)}`}
+                  className="rounded-full border-2 border-edge bg-denlight px-4 py-1.5 text-xs font-extrabold text-cream hover:border-sunny hover:text-sunny"
+                >
+                  {t.trope} <span className="text-muted">({t.c.toLocaleString()})</span>
+                </Link>
+              ))}
+              {tropes.length > 15 && (
+                <Link href="/explore" className="rounded-full border-2 border-sunny bg-sunny/20 px-4 py-1.5 text-xs font-extrabold text-sunny">
+                  More →
+                </Link>
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Continue watching */}
