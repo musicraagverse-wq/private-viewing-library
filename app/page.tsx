@@ -92,22 +92,6 @@ export default async function Home({
 
         {/* Filters */}
         <div className="mt-4 flex flex-wrap items-center gap-2 font-display">
-          <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Platform:</span>
-          <Link
-            href={href(base, { platform: undefined, page: undefined })}
-            className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${!platform ? "border-pop bg-pop/20 text-pop" : "border-edge text-muted hover:text-pop"}`}
-          >
-            All
-          </Link>
-          {platforms.slice(0, 12).map((p) => (
-            <Link
-              key={p.platform}
-              href={href(base, { platform: p.platform, page: undefined })}
-              className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${platform === p.platform ? "border-pop bg-pop/20 text-pop" : "border-edge text-muted hover:text-pop"}`}
-            >
-              {p.platform} ({p.c.toLocaleString()})
-            </Link>
-          ))}
           <Link
             href={href(base, { videos: onlyWithVideos ? undefined : "1", page: undefined })}
             className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${onlyWithVideos ? "border-teal bg-teal/20 text-teal" : "border-edge text-muted hover:text-teal"}`}
