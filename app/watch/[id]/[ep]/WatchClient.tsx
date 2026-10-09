@@ -31,26 +31,26 @@ export default function WatchClient({
     return <Player dramaId={dramaId} episode={episode} videoUrl={videoUrl} resumeAt={resumeAt} onEnded={onEnded} />;
   }
 
-  // Dailymotion embeds are currently blocked (403 Forbidden) — hidden until resolved
-  // if (dailymotionEmbed) {
-  //   return (
-  //     <div>
-  //       <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
-  //         <iframe
-  //           src={dailymotionEmbed}
-  //           className="absolute inset-0 h-full w-full"
-  //           frameBorder="0"
-  //           allow="autoplay; fullscreen"
-  //           allowFullScreen
-  //           title="Dailymotion player"
-  //         />
-  //       </div>
-  //       <p className="mt-2 text-center text-xs text-slate-500">
-  //         Alternative source via Dailymotion — progress tracking unavailable for embeds
-  //       </p>
-  //     </div>
-  //   );
-  // }
+  if (dailymotionEmbed) {
+    // Extract video ID from embed URL for direct link
+    const videoId = dailymotionEmbed.split("/").pop();
+    const watchUrl = `https://www.dailymotion.com/video/${videoId}`;
+    return (
+      <div className="den-card p-10 text-center">
+        <div className="text-4xl mb-4">🎬</div>
+        <p className="font-display text-lg font-extrabold text-cream">Available on Dailymotion</p>
+        <p className="mt-2 text-sm font-semibold text-muted">Dailymotion blocks embeds, but you can watch it there directly! 👇</p>
+        <a
+          href={watchUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-6 inline-block rounded-den bg-pop px-8 py-3 font-display text-sm font-extrabold text-white hover:bg-popdark"
+        >
+          ▶ Watch on Dailymotion
+        </a>
+      </div>
+    );
+  }
 
   return (
     <div className="den-card p-10 text-center">
