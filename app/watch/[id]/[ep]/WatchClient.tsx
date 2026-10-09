@@ -31,25 +31,32 @@ export default function WatchClient({
     return <Player dramaId={dramaId} episode={episode} videoUrl={videoUrl} resumeAt={resumeAt} onEnded={onEnded} />;
   }
 
-  if (dailymotionEmbed) {
-    return (
-      <div>
-        <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
-          <iframe
-            src={dailymotionEmbed}
-            className="absolute inset-0 h-full w-full"
-            frameBorder="0"
-            allow="autoplay; fullscreen"
-            allowFullScreen
-            title="Dailymotion player"
-          />
-        </div>
-        <p className="mt-2 text-center text-xs text-slate-500">
-          Alternative source via Dailymotion — progress tracking unavailable for embeds
-        </p>
-      </div>
-    );
-  }
+  // Dailymotion embeds are currently blocked (403 Forbidden) — hidden until resolved
+  // if (dailymotionEmbed) {
+  //   return (
+  //     <div>
+  //       <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black">
+  //         <iframe
+  //           src={dailymotionEmbed}
+  //           className="absolute inset-0 h-full w-full"
+  //           frameBorder="0"
+  //           allow="autoplay; fullscreen"
+  //           allowFullScreen
+  //           title="Dailymotion player"
+  //         />
+  //       </div>
+  //       <p className="mt-2 text-center text-xs text-slate-500">
+  //         Alternative source via Dailymotion — progress tracking unavailable for embeds
+  //       </p>
+  //     </div>
+  //   );
+  // }
 
-  return null;
+  return (
+    <div className="den-card p-10 text-center">
+      <div className="text-4xl mb-4">🎭</div>
+      <p className="font-display text-lg font-extrabold text-cream">No video available yet</p>
+      <p className="mt-2 text-sm font-semibold text-muted">Check back soon! We're working on it. 🔄</p>
+    </div>
+  );
 }

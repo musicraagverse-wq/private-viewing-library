@@ -89,8 +89,6 @@ export default function DramaCard({ drama, progress }: { drama: DramaRow; progre
           </span>
           {drama.has_videos ? (
             <span className="text-[11px] font-extrabold text-teal">▶ Watch now</span>
-          ) : hasDm ? (
-            <span className="text-[11px] font-extrabold text-sunny">◈ Backup</span>
           ) : (
             <span className="text-[11px] font-bold text-muted/60">Soon</span>
           )}
