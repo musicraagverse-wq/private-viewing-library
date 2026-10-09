@@ -121,6 +121,10 @@ export async function saveProgress(dramaId: string, episode: number, positionSec
   `;
 }
 
+export async function deleteProgress(dramaId: string): Promise<void> {
+  await sql`DELETE FROM watch_progress WHERE drama_id = ${dramaId}`;
+}
+
 export async function getStats(): Promise<{ total: number; withVideos: number; withAlt: number }> {
   const nd = "COALESCE(is_duplicate,0) = 0";
   const [t, v, a] = await Promise.all([

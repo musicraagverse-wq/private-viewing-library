@@ -3,6 +3,7 @@ import { browseDramas, countDramas, getPlatforms, getSources, getContinueWatchin
 import DramaCard, { Poster } from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import BrowseTabs from "@/components/BrowseTabs";
+import ContinueWatching from "@/components/ContinueWatching";
 
 export const dynamic = "force-dynamic";
 
@@ -130,28 +131,7 @@ export default async function Home({
 
       {/* Continue watching */}
       {continueWatching.length > 0 && (
-        <section>
-          <h2 className="mb-3 font-display text-2xl font-extrabold">📺 Continue Watching</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
-            {continueWatching.map((d) => (
-              <Link
-                key={d.id}
-                href={`/watch/${encodeURIComponent(d.id)}/${d.episode}`}
-                className="den-card den-card-hover group"
-              >
-                <div className="relative aspect-[3/4]">
-                  <Poster title={d.title} posterUrl={d.poster_url} className="h-full w-full" />
-                  <div className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-center text-[11px] font-extrabold text-sunny">
-                    EP {d.episode}
-                  </div>
-                </div>
-                <div className="line-clamp-1 p-2 text-xs font-extrabold text-cream group-hover:text-pop">
-                  {d.title}
-                </div>
-              </Link>
-            ))}
-          </div>
-        </section>
+        <ContinueWatching items={continueWatching} />
       )}
 
       {/* Grid */}
