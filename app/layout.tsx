@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import LogoutButton from "@/components/LogoutButton";
 
 export const metadata: Metadata = {
   title: {
@@ -24,6 +25,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="hover:text-pop">Home</Link>
               <Link href="/explore" className="hover:text-pop">Explore</Link>
             </nav>
+            <div className="ml-auto">
+              <LogoutButton />
+            </div>
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6">{children}</main>
