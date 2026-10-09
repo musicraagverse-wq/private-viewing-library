@@ -5,10 +5,10 @@ import LogoutButton from "@/components/LogoutButton";
 
 export const metadata: Metadata = {
   title: {
-    default: "The Drama Den",
-    template: "%s · The Drama Den",
+    default: "Short Drama",
+    template: "%s · Short Drama",
   },
-  description: "Your personal drama collection.",
+  description: "Watch short dramas & mini series.",
   robots: { index: false, follow: false },
 };
 
@@ -16,14 +16,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <header className="sticky top-0 z-40 border-b-2 border-edge/60 bg-den/90 backdrop-blur-md">
-          <div className="mx-auto flex max-w-7xl items-center gap-6 px-4 py-3 sm:px-6">
-            <Link href="/" className="font-display text-2xl font-extrabold tracking-tight">
-              🎭 <span className="pop-text">The Drama Den</span>
+        <header className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur">
+          <div className="mx-auto flex max-w-7xl items-center gap-8 px-4 py-4 sm:px-6">
+            <Link href="/" className="text-2xl font-extrabold tracking-tight">
+              <span className="text-primary">Short</span>
+              <span className="text-text">Drama</span>
             </Link>
-            <nav className="flex items-center gap-4 text-sm font-bold text-muted">
-              <Link href="/" className="hover:text-pop">Home</Link>
-              <Link href="/explore" className="hover:text-pop">Explore</Link>
+            <nav className="flex items-center gap-6 text-sm font-semibold text-muted">
+              <Link href="/" className="hover:text-text">Home</Link>
+              <Link href="/explore" className="hover:text-text">Genres</Link>
+              <Link href="/explore" className="hover:text-text">Platforms</Link>
             </nav>
             <div className="ml-auto">
               <LogoutButton />
@@ -31,9 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6">{children}</main>
-        <footer className="border-t-2 border-edge/60 bg-denlight/40">
-          <div className="mx-auto max-w-7xl px-4 py-6 text-xs text-muted sm:px-6">
-            🎭 The Drama Den · your personal collection
+        <footer className="border-t border-border">
+          <div className="mx-auto max-w-7xl px-4 py-8 text-center text-xs text-muted sm:px-6">
+            Short Drama · Your personal collection
           </div>
         </footer>
       </body>

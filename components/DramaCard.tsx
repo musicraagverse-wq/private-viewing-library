@@ -1,70 +1,49 @@
 import Link from "next/link";
-import type { DramaRow } from "@/lib/types";
-import { dailymotionId } from "@/lib/types";
+
+export type DramaRow = {
+  id: string;
+  title: string;
+  poster_url: string | null;
+  episode_count: number | null;
+  platform: string | null;
+  has_videos: number;
+  alt_source: string | null;
+};
 
 function gradientFor(title: string): string {
   const palettes = [
-    "from-pop via-grape to-teal",
-    "from-sunny via-pop to-grape",
-    "from-teal via-grape to-pop",
-    "from-grape via-pop to-sunny",
-    "from-pop via-sunny to-teal",
-    "from-teal via-pop to-grape",
+    "from-red-950 via-neutral-900 to-neutral-800",
+    "from-neutral-900 via-red-950 to-neutral-800",
+    "from-stone-900 via-neutral-900 to-red-950",
   ];
   let h = 0;
   for (const ch of title) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
   return palettes[h % palettes.length];
 }
 
-export function Poster({
-  title,
-  posterUrl,
-  className = "",
-}: {
-  title: string;
-  posterUrl: string | null;
-  className?: string;
-}) {
+export function Poster({ title, posterUrl, className }: { title: string; posterUrl: string | null; className?: string }) {
   if (posterUrl) {
-    return <img src={posterUrl} alt={`${title} poster`} loading="lazy" className={`object-cover ${className}`} />;
+    return <img src={posterUrl} alt={title} loading="lazy" className={`object-cover ${className ?? ""}`} />;
   }
-  const initials = title
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("")
-    .toUpperCase();
   return (
-    <div
-      className={`flex items-center justify-center bg-gradient-to-br ${gradientFor(title)} ${className}`}
-      aria-label={`${title} artwork placeholder`}
-    >
-      <span className="text-3xl font-black text-white/80 drop-shadow">{initials}</span>
+    <div className={`flex items-center justify-center bg-gradient-to-br p-3 text-center ${gradientFor(title)} ${className ?? ""}`}>
+      <span className="line-clamp-4 text-xs font-bold text-white/90">{title}</span>
     </div>
   );
 }
 
-export function SourceBadge({ source }: { source: string | null }) {
-  if (!source) return null;
-  const colors: Record<string, string> = {
-    everydrama: "bg-pop/20 text-pop border-pop/50",
-    finddrama: "bg-teal/20 text-teal border-teal/50",
-    freedrama: "bg-sunny/20 text-sunny border-sunny/50",
-  };
-  const cls = colors[source] ?? "bg-muted/20 text-muted border-muted/50";
-  return (
-    <span className={`rounded-full border-2 px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide ${cls}`}>
-      {source}
-    </span>
-  );
+export function dailymotionId(alt: string | null): string | null {
+  if (!alt) return null;
+  const m = alt.match(/^dailymotion:(.+)$/);
+  return m ? m[1] : null;
 }
 
-export default function DramaCard({ drama, progress }: { drama: DramaRow; progress?: { episode: number } | null }) {
+export default function DramaCard({ drama }: { drama: DramaRow }) {
   const hasDm = !!dailymotionId(drama.alt_source);
   return (
     <Link
       href={`/drama/${encodeURIComponent(drama.id)}`}
-      className="den-card den-card-hover group relative flex flex-col"
+      className="card-hover group overflow-hidden rounded-lg bg-card"
     >
       <div className="relative aspect-[3/4] w-full overflow-hidden">
         <Poster
@@ -72,28 +51,23 @@ export default function DramaCard({ drama, progress }: { drama: DramaRow; progre
           posterUrl={drama.poster_url}
           className="h-full w-full transition-transform duration-300 group-hover:scale-105"
         />
-        <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/80 to-transparent" />
-        {progress && (
-          <div className="absolute left-2 top-2 z-10 rounded-full bg-black/70 px-2 py-0.5 text-[10px] font-extrabold text-sunny backdrop-blur">
-            EP {progress.episode}
+        {drama.has_videos ? (
+          <div className="absolute left-2 top-2 rounded bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
+            ▶ Free
           </div>
-        )}
+        ) : hasDm ? (
+          <div className="absolute left-2 top-2 rounded bg-gold px-2 py-0.5 text-[10px] font-bold text-black">
+            Dailymotion
+          </div>
+        ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        <h3 className="line-clamp-2 font-display text-sm font-bold leading-snug text-cream group-hover:text-pop">
+      <div className="p-3">
+        <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-text group-hover:text-primary">
           {drama.title}
         </h3>
-        <div className="mt-auto flex items-center justify-between pt-1">
-          <span className="text-[11px] font-bold text-muted">
-            {drama.episode_count ? `${drama.episode_count} eps` : "—"}
-          </span>
-          {drama.has_videos ? (
-            <span className="text-[11px] font-extrabold text-teal">▶ Watch now</span>
-          ) : hasDm ? (
-            <span className="text-[11px] font-extrabold text-sunny">◈ Dailymotion</span>
-          ) : (
-            <span className="text-[11px] font-bold text-muted/60">Soon</span>
-          )}
+        <div className="mt-1.5 flex items-center justify-between text-xs text-muted">
+          <span className="truncate">{drama.platform ?? ""}</span>
+          <span>{drama.episode_count ? `${drama.episode_count} eps` : ""}</span>
         </div>
       </div>
     </Link>

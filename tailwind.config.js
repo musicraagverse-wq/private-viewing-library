@@ -8,25 +8,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // The Drama Den: bold, vibrant, fun
-        den: "#1a0b2e",
-        denlight: "#251344",
-        card: "#2d1a4e",
-        edge: "#4a2d7a",
-        pop: "#ff4d8d",
-        popdark: "#e6397a",
-        sunny: "#ffd93d",
-        teal: "#2dd4bf",
-        grape: "#a855f7",
-        cream: "#fff8f0",
-        muted: "#c4b5d9",
+        // Short Drama: clean dark theme with red accent (EveryDrama-inspired)
+        bg: "#0f0f13",
+        surface: "#1a1a21",
+        card: "#22222b",
+        border: "#2e2e38",
+        primary: "#e50914",
+        primarydark: "#b20710",
+        text: "#ffffff",
+        muted: "#9ca3af",
+        gold: "#f5c518",
       },
       fontFamily: {
-        display: ["'Baloo 2'", "'Fredoka'", "ui-rounded", "system-ui", "sans-serif"],
-        sans: ["'Nunito'", "ui-rounded", "system-ui", "sans-serif"],
-      },
-      borderRadius: {
-        'den': '1.5rem',
+        display: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
       },
     },
   },

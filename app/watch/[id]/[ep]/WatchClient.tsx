@@ -36,15 +36,15 @@ export default function WatchClient({
     const videoId = dailymotionEmbed.split("/").pop();
     const watchUrl = `https://www.dailymotion.com/video/${videoId}`;
     return (
-      <div className="den-card p-10 text-center">
+      <div className="rounded-lg bg-card p-10 text-center">
         <div className="text-4xl mb-4">🎬</div>
-        <p className="font-display text-lg font-extrabold text-cream">Available on Dailymotion</p>
+        <p className="text-lg font-extrabold text-text">Available on Dailymotion</p>
         <p className="mt-2 text-sm font-semibold text-muted">Dailymotion blocks embeds, but you can watch it there directly! 👇</p>
         <a
           href={watchUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-6 inline-block rounded-den bg-pop px-8 py-3 font-display text-sm font-extrabold text-white hover:bg-popdark"
+          className="mt-6 inline-block rounded-den bg-primary px-8 py-3 text-sm font-extrabold text-white hover:bg-primarydark"
         >
           ▶ Watch on Dailymotion
         </a>
@@ -53,9 +53,9 @@ export default function WatchClient({
   }
 
   return (
-    <div className="den-card p-10 text-center">
+    <div className="rounded-lg bg-card p-10 text-center">
       <div className="text-4xl mb-4">🎭</div>
-      <p className="font-display text-lg font-extrabold text-cream">No video available yet</p>
+      <p className="text-lg font-extrabold text-text">No video available yet</p>
       <p className="mt-2 text-sm font-semibold text-muted">Check back soon! We're working on it. 🔄</p>
     </div>
   );

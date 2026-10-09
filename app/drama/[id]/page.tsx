@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getDrama, getDuplicatesOf, getProgress, pingDb } from "@/lib/db";
 import { parseEpisodeUrls, dailymotionId } from "@/lib/types";
-import { Poster, SourceBadge } from "@/components/DramaCard";
+import { Poster } from "@/components/DramaCard";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +48,6 @@ export default async function DramaDetail({ params }: { params: { id: string } }
         </div>
         <div className="flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <SourceBadge source={drama.source} />
             {altVersions.length > 0 && (
               <span className="text-xs text-muted">
                 Also on:{" "}
