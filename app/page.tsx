@@ -91,20 +91,20 @@ export default async function Home({
 
         {/* Filters */}
         <div className="mt-4 flex flex-wrap items-center gap-2 font-display">
-          <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Source:</span>
+          <span className="text-xs font-extrabold uppercase tracking-wide text-muted">Platform:</span>
           <Link
-            href={href(base, { source: undefined, page: undefined })}
-            className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${!source ? "border-pop bg-pop/20 text-pop" : "border-edge text-muted hover:text-pop"}`}
+            href={href(base, { platform: undefined, page: undefined })}
+            className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${!platform ? "border-pop bg-pop/20 text-pop" : "border-edge text-muted hover:text-pop"}`}
           >
             All
           </Link>
-          {sources.map((s) => (
+          {platforms.slice(0, 12).map((p) => (
             <Link
-              key={s.source}
-              href={href(base, { source: s.source, page: undefined })}
-              className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${source === s.source ? "border-pop bg-pop/20 text-pop" : "border-edge text-muted hover:text-pop"}`}
+              key={p.platform}
+              href={href(base, { platform: p.platform, page: undefined })}
+              className={`rounded-full border-2 px-4 py-1.5 text-xs font-extrabold ${platform === p.platform ? "border-pop bg-pop/20 text-pop" : "border-edge text-muted hover:text-pop"}`}
             >
-              {s.source} ({s.c.toLocaleString()})
+              {p.platform} ({p.c.toLocaleString()})
             </Link>
           ))}
           <Link
