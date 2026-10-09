@@ -15,6 +15,8 @@ export interface DramaRow {
   is_duplicate: number;
   duplicate_of: string | null;
   scraped_at: string | null;
+  imdb_id: string | null;
+  cast_data: string | null;
 }
 
 export interface WatchProgress {
