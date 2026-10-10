@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-
-const COOKIE_NAME = "pvl_auth";
+import { COOKIE_NAME, verifySessionToken } from "./lib/auth";
 
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -19,7 +18,7 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (token === expected) {
+  if (verifySessionToken(token, expected)) {
     return NextResponse.next();
   }
 

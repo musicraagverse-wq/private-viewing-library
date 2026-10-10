@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-
-const COOKIE_NAME = "pvl_auth";
+import { COOKIE_NAME, makeSessionToken } from "@/lib/auth";
 
 export async function POST(req: Request) {
   const expected = process.env.LIBRARY_PASSWORD;
@@ -12,7 +11,8 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Wrong password" }, { status: 401 });
   }
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(COOKIE_NAME, expected, {
+  // Store a signed session token, never the raw password.
+  res.cookies.set(COOKIE_NAME, makeSessionToken(expected), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
