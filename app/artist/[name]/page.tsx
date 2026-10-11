@@ -8,6 +8,12 @@ export const dynamic = "force-dynamic";
 
 const PER_PAGE = 24;
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default async function ArtistPage({
   params,
   searchParams,
@@ -24,11 +30,20 @@ export default async function ArtistPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/artists" className="text-sm text-muted hover:text-marquee">← Artists</Link>
-        <h1 className="mt-2 font-display text-3xl tracking-wide">
-          <span className="marquee-text">{actor}</span>
-        </h1>
-        <p className="mt-1 text-sm text-muted">{total.toLocaleString()} titles</p>
+        <Link href="/artists" className="text-sm text-muted hover:text-primary">
+          ← Artists
+        </Link>
+        <div className="mt-3 flex items-center gap-4">
+          <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/15 text-xl font-bold text-primary">
+            {initials(actor)}
+          </span>
+          <div>
+            <h1 className="text-3xl font-bold">{actor}</h1>
+            <p className="mt-1 text-sm text-muted">
+              {total.toLocaleString()} {total === 1 ? "title" : "titles"}
+            </p>
+          </div>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {dramas.map((d) => (

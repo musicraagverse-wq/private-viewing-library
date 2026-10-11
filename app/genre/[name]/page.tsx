@@ -24,10 +24,8 @@ export default async function GenrePage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/explore" className="text-sm text-muted hover:text-marquee">← Explore</Link>
-        <h1 className="mt-2 font-display text-3xl tracking-wide">
-          <span className="marquee-text">{genre}</span>
-        </h1>
+        <Link href="/explore" className="text-sm text-muted hover:text-primary">← Explore</Link>
+        <h1 className="mt-2 text-3xl font-bold">{genre}</h1>
         <p className="mt-1 text-sm text-muted">{total.toLocaleString()} titles</p>
       </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
