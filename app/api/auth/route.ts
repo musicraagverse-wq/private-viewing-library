@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   }
   const res = NextResponse.json({ ok: true });
   // Store a signed session token, never the raw password.
-  res.cookies.set(COOKIE_NAME, makeSessionToken(expected), {
+  res.cookies.set(COOKIE_NAME, await makeSessionToken(expected), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

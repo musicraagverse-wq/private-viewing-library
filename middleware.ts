@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { COOKIE_NAME, verifySessionToken } from "./lib/auth";
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // Allow the login page and its API through
@@ -10,16 +10,20 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get(COOKIE_NAME)?.value;
-  const expected = process.env.LIBRARY_PASSWORD;
+  try {
+    const token = req.cookies.get(COOKIE_NAME)?.value;
+    const expected = process.env.LIBRARY_PASSWORD;
 
-  // If no password is configured, allow all (local dev)
-  if (!expected) {
-    return NextResponse.next();
-  }
+    // If no password is configured, allow all (local dev)
+    if (!expected) {
+      return NextResponse.next();
+    }
 
-  if (verifySessionToken(token, expected)) {
-    return NextResponse.next();
+    if (await verifySessionToken(token, expected)) {
+      return NextResponse.next();
+    }
+  } catch {
+    // Auth verification must never 500 the request: fall through to login.
   }
 
   const url = req.nextUrl.clone();
