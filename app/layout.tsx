@@ -24,8 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </Link>
             <nav className="flex items-center gap-6 text-sm font-semibold text-muted">
               <Link href="/" className="hover:text-text">Home</Link>
-              <Link href="/explore" className="hover:text-text">Genres</Link>
-              <Link href="/explore" className="hover:text-text">Platforms</Link>
+              <Link href="/explore#genres" className="hover:text-text">Genres</Link>
+              <Link href="/explore#platforms" className="hover:text-text">Platforms</Link>
+              <Link href="/explore#tropes" className="hover:text-text">Tropes</Link>
+              <Link href="/artists" className="hover:text-text">Artists</Link>
             </nav>
             <div className="ml-auto">
               <LogoutButton />

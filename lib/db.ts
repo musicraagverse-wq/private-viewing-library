@@ -278,3 +278,58 @@ export async function browseCollection(slug: string, page: number, perPage: numb
   ]);
   return { dramas: dramas as DramaRow[], total: Number(countRows[0].c) };
 }
+
+export interface ArtistEntry {
+  actor: string;
+  count: number;
+}
+
+function parseCast(raw: string | null): { actor: string; character: string }[] {
+  if (!raw) return [];
+  try {
+    const v = JSON.parse(raw);
+    if (!Array.isArray(v)) return [];
+    return v
+      .filter((e) => e && typeof e.actor === "string" && e.actor.trim())
+      .map((e) => ({ actor: e.actor.trim(), character: typeof e.character === "string" ? e.character : "" }));
+  } catch {
+    return [];
+  }
+}
+
+/** All actors aggregated from cast_data, with drama counts. */
+export async function getArtists(): Promise<ArtistEntry[]> {
+  const rows = (await sql`
+    SELECT cast_data FROM dramas
+    WHERE COALESCE(is_duplicate,0) = 0 AND cast_data IS NOT NULL AND cast_data != ''
+  `) as { cast_data: string | null }[];
+  const counts = new Map<string, number>();
+  for (const r of rows) {
+    for (const c of parseCast(r.cast_data)) {
+      counts.set(c.actor, (counts.get(c.actor) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .map(([actor, count]) => ({ actor, count }))
+    .sort((a, b) => b.count - a.count || a.actor.localeCompare(b.actor));
+}
+
+/** Dramas featuring a given actor (case-insensitive exact name match). */
+export async function browseByArtist(
+  actor: string,
+  page: number,
+  perPage: number
+): Promise<{ dramas: DramaRow[]; total: number }> {
+  const rows = (await sql`
+    SELECT * FROM dramas
+    WHERE COALESCE(is_duplicate,0) = 0 AND cast_data IS NOT NULL AND cast_data != ''
+  `) as DramaRow[];
+  const want = actor.toLowerCase();
+  const matched = rows.filter((d) =>
+    parseCast(d.cast_data).some((c) => c.actor.toLowerCase() === want)
+  );
+  matched.sort((a, b) => (b.scraped_at ?? "").localeCompare(a.scraped_at ?? ""));
+  const total = matched.length;
+  const offset = (page - 1) * perPage;
+  return { dramas: matched.slice(offset, offset + perPage), total };
+}

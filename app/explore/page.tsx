@@ -1,10 +1,14 @@
 import Link from "next/link";
-import { getGenres, getTropes, COLLECTIONS } from "@/lib/db";
+import { getGenres, getTropes, getPlatforms, COLLECTIONS } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function ExplorePage() {
-  const [genres, tropes] = await Promise.all([getGenres(), getTropes()]);
+  const [genres, tropes, platforms] = await Promise.all([
+    getGenres(),
+    getTropes(),
+    getPlatforms(),
+  ]);
 
   return (
     <div className="space-y-10">
@@ -37,7 +41,7 @@ export default async function ExplorePage() {
         </div>
       </section>
 
-      <section>
+      <section id="genres" className="scroll-mt-24">
         <h2 className="mb-4 font-display text-2xl font-extrabold">🎭 Genres</h2>
         <div className="flex flex-wrap gap-2">
           {genres.map((g) => (
@@ -52,7 +56,22 @@ export default async function ExplorePage() {
         </div>
       </section>
 
-      <section>
+      <section id="platforms" className="scroll-mt-24">
+        <h2 className="mb-4 font-display text-2xl font-extrabold">📱 Platforms</h2>
+        <div className="flex flex-wrap gap-2">
+          {platforms.map((p) => (
+            <Link
+              key={p.platform}
+              href={`/?platform=${encodeURIComponent(p.platform)}`}
+              className="den-card den-card-hover rounded-full px-4 py-2 text-sm font-extrabold text-cream hover:text-pop"
+            >
+              {p.platform} <span className="text-muted">({p.c.toLocaleString()})</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section id="tropes" className="scroll-mt-24">
         <h2 className="mb-4 font-display text-2xl font-extrabold">🔥 Tropes</h2>
         <p className="mb-4 text-xs font-semibold text-muted">
           The classic drama formulas — spotted in titles & synopses! 📚
