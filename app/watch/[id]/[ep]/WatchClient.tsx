@@ -109,7 +109,7 @@ export default function WatchClient({
       </button>
     </div>
   ) : videoUrl ? (
-    <Player dramaId={dramaId} dramaTitle={dramaTitle} episode={episode} totalEps={totalEps} videoUrl={videoUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} />
+    <Player dramaId={dramaId} episode={episode} videoUrl={videoUrl} resumeAt={resumeAt} onEnded={onEnded} />
   ) : dailymotionEmbed ? (
     <div className="rounded-xl bg-card p-10 text-center">
       <div className="text-4xl mb-4">🎬</div>

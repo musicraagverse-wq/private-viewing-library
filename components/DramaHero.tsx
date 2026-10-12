@@ -103,13 +103,10 @@ export default function DramaHero({
             ) : videoUrl ? (
               <Player
                 dramaId={dramaId}
-                dramaTitle={title}
                 episode={episode}
-                totalEps={totalEps}
                 videoUrl={videoUrl}
                 resumeAt={episode === resumeEp ? resumeSeconds : 0}
                 onEnded={onEnded}
-                onNavigate={onNavigate}
                 onClose={() => setWatching(false)}
               />
             ) : (
