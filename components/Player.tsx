@@ -18,6 +18,7 @@ export default function Player({
   resumeAt,
   onEnded,
   onNavigate,
+  onClose,
 }: {
   dramaId: string;
   dramaTitle: string;
@@ -27,6 +28,7 @@ export default function Player({
   resumeAt: number;
   onEnded: () => void;
   onNavigate: (ep: number) => void;
+  onClose?: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const savedRef = useRef(0);
@@ -206,7 +208,7 @@ export default function Player({
       {/* top bar */}
       <div className={`absolute inset-x-0 top-0 bg-gradient-to-b from-black/70 to-transparent p-3 transition-opacity ${controls ? "opacity-100" : "opacity-0"}`}>
         <div className="flex items-center gap-3">
-          <button onClick={() => window.history.back()} className="text-2xl text-white" aria-label="Back">←</button>
+          <button onClick={() => (onClose ? onClose() : window.history.back())} className="text-2xl text-white" aria-label="Back">←</button>
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-white">{dramaTitle}</p>
             <p className="text-xs text-white/70">Episode {episode}{totalEps > 0 ? ` of ${totalEps}` : ""}</p>

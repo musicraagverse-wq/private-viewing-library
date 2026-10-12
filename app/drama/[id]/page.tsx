@@ -2,8 +2,8 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getDrama, getDuplicatesOf, getProgress, pingDb, browseByGenre, getPlatforms } from "@/lib/db";
 import { parseEpisodeUrls, dailymotionId } from "@/lib/types";
-import { Poster } from "@/components/DramaCard";
 import DramaCard from "@/components/DramaCard";
+import DramaHero from "@/components/DramaHero";
 import PlatformMark from "@/components/PlatformMark";
 
 export const dynamic = "force-dynamic";
@@ -32,9 +32,6 @@ export default async function DramaDetail({ params }: { params: { id: string } }
   const progress = await getProgress(drama.id);
   const resumeEp = progress ? progress.episode : 1;
   const dm = dailymotionId(drama.alt_source);
-
-  const episodes: number[] = [];
-  for (let i = 1; i <= Math.min(epCount, 100); i++) episodes.push(i);
 
   // Cast from IMDB mapping
   let cast: { actor: string; character: string }[] = [];
@@ -67,74 +64,20 @@ export default async function DramaDetail({ params }: { params: { id: string } }
     <div className="space-y-8">
       <Link href="/" className="text-sm text-muted hover:text-primary">← Back</Link>
 
-      {/* Main info */}
-      <section className="rounded-lg border border-border bg-surface p-6">
-        <div className="flex flex-col gap-6 sm:flex-row">
-          <div className="w-40 shrink-0 sm:w-52">
-            <div className="aspect-[3/4] overflow-hidden rounded-lg">
-              <Poster title={drama.title} posterUrl={drama.poster_url} className="h-full w-full" />
-            </div>
-          </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-extrabold sm:text-3xl">{drama.title}</h1>
-            <div className="mt-2 text-sm text-primary font-semibold">
-              {drama.platform ? <PlatformMark platform={drama.platform} /> : ""}
-            </div>
-            <div className="mt-1 text-sm text-muted">
-              {epCount > 0 ? `${epCount} Episodes` : "Episodes unknown"}
-            </div>
-
-            <div className="mt-6">
-              {urls.length > 0 ? (
-                <Link
-                  href={`/watch/${encodeURIComponent(drama.id)}/${resumeEp}`}
-                  className="inline-block rounded-lg bg-primary px-8 py-3 text-sm font-bold text-white hover:bg-primarydark"
-                >
-                  ▶ {progress ? `Resume EP ${resumeEp}` : "Watch All Episodes"}
-                </Link>
-              ) : dm ? (
-                <Link
-                  href={`/watch/${encodeURIComponent(drama.id)}/1`}
-                  className="inline-block rounded-lg bg-gold px-8 py-3 text-sm font-bold text-black hover:opacity-90"
-                >
-                  ◈ Watch on Dailymotion
-                </Link>
-              ) : (
-                <span className="inline-block rounded-lg border border-border px-8 py-3 text-sm font-semibold text-muted">
-                  Not streaming here yet
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Episodes */}
-      {episodes.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-xl font-bold">
-            Episodes <span className="text-sm font-semibold text-muted">({epCount})</span>
-          </h2>
-          <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-10">
-            {episodes.map((ep) => (
-              <Link
-                key={ep}
-                href={`/watch/${encodeURIComponent(drama.id)}/${ep}`}
-                className={`rounded-lg border py-2.5 text-center text-sm font-bold transition ${
-                  ep === resumeEp
-                    ? "border-primary bg-primary text-white"
-                    : "border-border bg-surface text-text hover:border-primary"
-                }`}
-              >
-                {ep}
-              </Link>
-            ))}
-          </div>
-          {epCount > 100 && (
-            <p className="mt-2 text-xs text-muted">Showing first 100 of {epCount} episodes.</p>
-          )}
-        </section>
-      )}
+      {/* Hero: poster/info, or embedded player + episode grid when watching */}
+      <DramaHero
+        dramaId={drama.id}
+        title={drama.title}
+        platform={drama.platform}
+        posterUrl={drama.poster_url}
+        episodeUrls={urls}
+        episodeCount={epCount}
+        resumeEp={resumeEp}
+        hasProgress={!!progress}
+        resumeSeconds={progress && progress.episode === resumeEp ? progress.position_seconds : 0}
+        dailymotionId={dm}
+        upNext={moreFromPlatform.map((d: any) => ({ id: d.id, title: d.title, poster_url: d.poster_url }))}
+      />
 
       {/* Synopsis */}
       {drama.synopsis && (
@@ -209,30 +152,6 @@ export default async function DramaDetail({ params }: { params: { id: string } }
           )}
         </div>
       </section>
-
-      {/* Episodes */}
-      {episodes.length > 0 && urls.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-xl font-bold">Episodes</h2>
-          <div className="grid grid-cols-5 gap-2 sm:grid-cols-8 md:grid-cols-10">
-            {episodes.map((n) => {
-              const watched = progress && n < progress.episode;
-              const current = progress && n === progress.episode;
-              return (
-                <Link
-                  key={n}
-                  href={`/watch/${encodeURIComponent(drama.id)}/${n}`}
-                  className={`rounded-lg border py-2 text-center text-sm font-bold transition-colors hover:border-primary hover:text-primary ${
-                    current ? "border-primary text-primary" : watched ? "border-border text-muted/50" : "border-border text-text"
-                  }`}
-                >
-                  {n}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
 
       {/* More from platform */}
       {moreFromPlatform.length > 0 && (
