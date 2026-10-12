@@ -282,36 +282,70 @@ export async function browseCollection(slug: string, page: number, perPage: numb
 export interface ArtistEntry {
   actor: string;
   count: number;
+  nconst: string | null;
+  photo_url: string | null;
 }
 
-function parseCast(raw: string | null): { actor: string; character: string }[] {
+function parseCast(raw: string | null): { actor: string; character: string; nconst: string | null }[] {
   if (!raw) return [];
   try {
     const v = JSON.parse(raw);
     if (!Array.isArray(v)) return [];
     return v
       .filter((e) => e && typeof e.actor === "string" && e.actor.trim())
-      .map((e) => ({ actor: e.actor.trim(), character: typeof e.character === "string" ? e.character : "" }));
+      .map((e) => ({
+        actor: e.actor.trim(),
+        character: typeof e.character === "string" ? e.character : "",
+        nconst: typeof e.nconst === "string" && e.nconst ? e.nconst : null,
+      }));
   } catch {
     return [];
   }
 }
 
-/** All actors aggregated from cast_data, with drama counts. */
+/** All actors aggregated from cast_data, with drama counts + headshots. */
 export async function getArtists(): Promise<ArtistEntry[]> {
   const rows = (await sql`
     SELECT cast_data FROM dramas
     WHERE COALESCE(is_duplicate,0) = 0 AND cast_data IS NOT NULL AND cast_data != ''
   `) as { cast_data: string | null }[];
-  const counts = new Map<string, number>();
+  const counts = new Map<string, { actor: string; count: number }>();
   for (const r of rows) {
     for (const c of parseCast(r.cast_data)) {
-      counts.set(c.actor, (counts.get(c.actor) ?? 0) + 1);
+      const key = c.nconst ?? `name:${c.actor}`;
+      const e = counts.get(key) ?? { actor: c.actor, count: 0 };
+      e.count++;
+      counts.set(key, e);
     }
   }
-  return Array.from(counts.entries())
-    .map(([actor, count]) => ({ actor, count }))
+  const entries = Array.from(counts.entries());
+  const nconsts = entries.map(([k]) => k).filter((k) => k.startsWith("nm"));
+  const photoMap = new Map<string, string>();
+  for (let i = 0; i < nconsts.length; i += 500) {
+    const pr = (await sql.query(
+      "SELECT nconst, photo_url FROM artists WHERE nconst = ANY($1) AND photo_url IS NOT NULL",
+      [nconsts.slice(i, i + 500)]
+    )) as { nconst: string; photo_url: string }[];
+    for (const r of pr) photoMap.set(r.nconst, r.photo_url);
+  }
+  return entries
+    .map(([key, e]) => ({
+      actor: e.actor,
+      count: e.count,
+      nconst: key.startsWith("nm") ? key : null,
+      photo_url: photoMap.get(key) ?? null,
+    }))
     .sort((a, b) => b.count - a.count || a.actor.localeCompare(b.actor));
+}
+
+/** Headshot URL for an actor by name (used on the artist detail page). */
+export async function getArtistPhoto(actor: string): Promise<string | null> {
+  const rows = (await sql`
+    SELECT a.photo_url AS p FROM artists a
+    WHERE a.name = ${actor} AND a.photo_url IS NOT NULL
+    LIMIT 1
+  `) as { p: string | null }[];
+  return rows[0]?.p ?? null;
 }
 
 /** Dramas featuring a given actor (case-insensitive exact name match). */

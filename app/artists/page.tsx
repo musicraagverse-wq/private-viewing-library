@@ -27,13 +27,22 @@ export default async function ArtistsPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {artists.map((a) => (
               <Link
-                key={a.actor}
+                key={a.nconst ?? a.actor}
                 href={`/artist/${encodeURIComponent(a.actor)}`}
                 className="card-hover flex items-center gap-3 rounded-xl border border-border bg-surface p-3"
               >
-                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/15 text-base font-bold text-primary">
-                  {initials(a.actor)}
-                </span>
+                {a.photo_url ? (
+                  <img
+                    src={a.photo_url}
+                    alt={a.actor}
+                    loading="lazy"
+                    className="h-12 w-12 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/15 text-base font-bold text-primary">
+                    {initials(a.actor)}
+                  </span>
+                )}
                 <span className="min-w-0">
                   <span className="block truncate text-sm font-semibold text-text">
                     {a.actor}
