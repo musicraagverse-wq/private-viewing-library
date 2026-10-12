@@ -109,6 +109,33 @@ export default async function DramaDetail({ params }: { params: { id: string } }
         </div>
       </section>
 
+      {/* Episodes */}
+      {episodes.length > 0 && (
+        <section>
+          <h2 className="mb-3 text-xl font-bold">
+            Episodes <span className="text-sm font-semibold text-muted">({epCount})</span>
+          </h2>
+          <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-10">
+            {episodes.map((ep) => (
+              <Link
+                key={ep}
+                href={`/watch/${encodeURIComponent(drama.id)}/${ep}`}
+                className={`rounded-lg border py-2.5 text-center text-sm font-bold transition ${
+                  ep === resumeEp
+                    ? "border-primary bg-primary text-white"
+                    : "border-border bg-surface text-text hover:border-primary"
+                }`}
+              >
+                {ep}
+              </Link>
+            ))}
+          </div>
+          {epCount > 100 && (
+            <p className="mt-2 text-xs text-muted">Showing first 100 of {epCount} episodes.</p>
+          )}
+        </section>
+      )}
+
       {/* Synopsis */}
       {drama.synopsis && (
         <section>

@@ -35,7 +35,6 @@ export default function Player({
   const [controls, setControls] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [showEps, setShowEps] = useState(false);
   const [flash, setFlash] = useState<"-10" | "+10" | null>(null);
 
   const save = useCallback(
@@ -172,7 +171,7 @@ export default function Player({
   const pct = duration > 0 ? (progress / duration) * 100 : 0;
 
   return (
-    <div className="relative mx-auto aspect-[9/16] max-h-[82vh] w-full max-w-[480px] select-none overflow-hidden rounded-xl bg-black">
+    <div className="relative mx-auto aspect-video w-full select-none overflow-hidden rounded-xl bg-black">
       <video
         ref={videoRef}
         playsInline
@@ -269,36 +268,7 @@ export default function Player({
             Next ⏭
           </button>
         </div>
-        <button
-          onClick={() => { setShowEps(true); pokeControls(); }}
-          className="mt-2 w-full rounded-lg bg-white/10 py-2 text-sm font-semibold text-white"
-        >
-          Episodes ({episode}{totalEps > 0 ? `/${totalEps}` : ""})
-        </button>
       </div>
-
-      {/* episode drawer */}
-      {showEps && (
-        <div className="absolute inset-0 z-20 flex flex-col bg-black/90">
-          <div className="flex items-center justify-between p-4">
-            <p className="font-bold text-white">All Episodes</p>
-            <button onClick={() => setShowEps(false)} className="text-2xl text-white" aria-label="Close">×</button>
-          </div>
-          <div className="grid flex-1 grid-cols-5 content-start gap-2 overflow-y-auto p-4">
-            {Array.from({ length: totalEps > 0 ? totalEps : episode }, (_, i) => i + 1).map((ep) => (
-              <button
-                key={ep}
-                onClick={() => onNavigate(ep)}
-                className={`rounded-lg py-3 text-sm font-bold ${
-                  ep === episode ? "bg-primary text-white" : "bg-white/10 text-white"
-                }`}
-              >
-                {ep}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
