@@ -65,7 +65,7 @@ export default function DramaHero({
   if (watching) {
     const gridCount = totalEps > 0 ? totalEps : episode;
     return (
-      <section className="rounded-lg border border-border bg-surface p-6">
+      <section className="animate-fade-up rounded-lg border border-border bg-surface p-6">
         <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="min-w-0">
             {showUpNext ? (
@@ -106,6 +106,7 @@ export default function DramaHero({
                 episode={episode}
                 totalEps={totalEps}
                 videoUrl={videoUrl}
+                posterUrl={posterUrl}
                 resumeAt={episode === resumeEp ? resumeSeconds : 0}
                 onEnded={onEnded}
                 onNavigate={onNavigate}

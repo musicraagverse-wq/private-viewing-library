@@ -42,6 +42,7 @@ export default function WatchClient({
   dramaId,
   dramaTitle,
   platform,
+  posterUrl,
   episode,
   totalEps,
   videoUrl,
@@ -52,6 +53,7 @@ export default function WatchClient({
   dramaId: string;
   dramaTitle: string;
   platform: string | null;
+  posterUrl: string | null;
   episode: number;
   totalEps: number;
   videoUrl: string | null;
@@ -109,7 +111,7 @@ export default function WatchClient({
       </button>
     </div>
   ) : videoUrl ? (
-    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} />
+    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} />
   ) : dailymotionEmbed ? (
     <div className="rounded-xl bg-card p-10 text-center">
       <div className="text-4xl mb-4">🎬</div>

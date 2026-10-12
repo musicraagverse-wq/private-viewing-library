@@ -19,6 +19,7 @@ export default function Player({
   episode,
   totalEps,
   videoUrl,
+  posterUrl,
   resumeAt,
   onEnded,
   onNavigate,
@@ -28,6 +29,7 @@ export default function Player({
   episode: number;
   totalEps: number;
   videoUrl: string;
+  posterUrl: string | null;
   resumeAt: number;
   onEnded: () => void;
   onNavigate: (ep: number) => void;
@@ -39,6 +41,7 @@ export default function Player({
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resumeDone = useRef(false);
   const [playing, setPlaying] = useState(false);
+  const [started, setStarted] = useState(false);
   const [controls, setControls] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -74,6 +77,7 @@ export default function Player({
     setProgress(0);
     setDuration(0);
     setPlaying(false);
+    setStarted(false);
     video.load();
     video.play().catch(() => {});
     pokeControls();
@@ -154,8 +158,9 @@ export default function Player({
         ref={videoRef}
         className="h-full w-full"
         playsInline
-        preload="metadata"
+        preload="auto"
         src={videoUrl}
+        poster={posterUrl ?? undefined}
         onClick={toggle}
         onDoubleClick={(e) => {
           const rect = e.currentTarget.getBoundingClientRect();
@@ -173,6 +178,7 @@ export default function Player({
         }}
         onPlay={() => {
           setPlaying(true);
+          setStarted(true);
           pokeControls();
         }}
         onPause={(e) => {
@@ -195,8 +201,32 @@ export default function Player({
         </div>
       )}
 
-      {/* big play button when paused */}
-      {!playing && (
+      {/* pre-play overlay: poster + red badge, like EveryDrama — vanishes the moment playback starts */}
+      {!started && (
+        <button
+          onClick={toggle}
+          className="animate-fade-in absolute inset-0 flex flex-col items-center justify-center"
+          aria-label="Play"
+        >
+          {posterUrl && (
+            <img
+              src={posterUrl}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover opacity-85"
+            />
+          )}
+          <span className="absolute inset-0 bg-black/20" />
+          <span className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/90 text-2xl text-white shadow-xl">
+            ▶
+          </span>
+          <span className="relative mt-3 px-4 text-center text-base font-extrabold text-white drop-shadow-[0_2px_6px_rgba(0,0,0,0.9)]">
+            {resumeAt > 0 ? `Resume EP ${episode}` : `Play EP ${episode}`}
+          </span>
+        </button>
+      )}
+
+      {/* big play button when paused after start */}
+      {started && !playing && (
         <button
           onClick={toggle}
           className="absolute inset-0 flex items-center justify-center bg-black/30"

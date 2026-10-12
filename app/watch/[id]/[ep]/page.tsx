@@ -64,6 +64,7 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
         dramaId={drama.id}
         dramaTitle={drama.title}
         platform={drama.platform}
+        posterUrl={drama.poster_url}
         episode={ep}
         totalEps={totalEps}
         videoUrl={videoUrl}
