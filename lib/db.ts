@@ -373,3 +373,29 @@ export async function browseByArtist(
   const offset = (page - 1) * perPage;
   return { dramas: matched.slice(offset, offset + perPage), total };
 }
+
+export interface TopImdbEntry {
+  id: string;
+  title: string;
+  poster_url: string | null;
+  imdb_id: string | null;
+  imdb_rating: number | null;
+  imdb_votes: number | null;
+  imdb_wr: number | null;
+}
+
+/** Top IMDb-rated dramas by weighted rating (IMDb Top-250 formula).
+ *  minVotes=25 keeps ratings meaningful; maxVotes=5000 excludes a small set
+ *  of short dramas wrongly mapped to famous TV series with the same title. */
+export async function getTopImdb(limit: number): Promise<TopImdbEntry[]> {
+  const rows = (await sql`
+    SELECT id, title, poster_url, imdb_id, imdb_rating, imdb_votes, imdb_wr
+    FROM dramas
+    WHERE COALESCE(is_duplicate,0) = 0
+      AND imdb_wr IS NOT NULL
+      AND imdb_votes >= 25 AND imdb_votes <= 5000
+    ORDER BY imdb_wr DESC
+    LIMIT ${limit}
+  `) as TopImdbEntry[];
+  return rows;
+}
