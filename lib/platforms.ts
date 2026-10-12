@@ -16,6 +16,12 @@ export function platformLogo(platform: string): string | null {
   return d ? `https://www.google.com/s2/favicons?domain=${d}&sz=64` : null;
 }
 
+/** First letter of the pretty name, for the fallback badge. */
+export function platformInitial(platform: string): string {
+  const name = formatPlatform(platform);
+  return name.charAt(0).toUpperCase() || "?";
+}
+
 /** "stardust-tv" -> "Stardust Tv", "dramabox" -> "Dramabox" */
 export function formatPlatform(platform: string): string {
   return platform

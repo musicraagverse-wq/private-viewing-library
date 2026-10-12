@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getGenres, getTropes, getPlatforms, COLLECTIONS } from "@/lib/db";
-import { platformLogo, formatPlatform } from "@/lib/platforms";
+import { platformLogo, platformInitial, formatPlatform } from "@/lib/platforms";
 import { genreIcon, tropeIcon } from "@/lib/tag-icons";
 
 export const dynamic = "force-dynamic";
@@ -74,7 +74,13 @@ export default async function ExplorePage() {
                 href={`/?platform=${encodeURIComponent(p.platform)}`}
                 className={`${chip} flex items-center gap-2`}
               >
-                {logo && <img src={logo} alt="" className="h-4 w-4 rounded-sm" loading="lazy" />}
+                {logo ? (
+                  <img src={logo} alt="" className="h-4 w-4 rounded-sm" loading="lazy" />
+                ) : (
+                  <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-white">
+                    {platformInitial(p.platform)}
+                  </span>
+                )}
                 {formatPlatform(p.platform)} <span className="text-muted">({p.c.toLocaleString()})</span>
               </Link>
             );

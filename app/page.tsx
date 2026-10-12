@@ -3,7 +3,7 @@ import { browseDramas, countDramas, getPlatforms, getContinueWatching, getStats,
 import DramaCard, { Poster } from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import ContinueWatching from "@/components/ContinueWatching";
-import { platformLogo, formatPlatform } from "@/lib/platforms";
+import { platformLogo, platformInitial, formatPlatform } from "@/lib/platforms";
 import { genreIcon, tropeIcon } from "@/lib/tag-icons";
 
 export const dynamic = "force-dynamic";
@@ -231,7 +231,13 @@ export default async function Home({
                     href={href(base, { platform: p.platform, page: undefined })}
                     className="flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-primary hover:text-primary"
                   >
-                    {logo && <img src={logo} alt="" className="h-4 w-4 rounded-sm" loading="lazy" />}
+                    {logo ? (
+                      <img src={logo} alt="" className="h-4 w-4 rounded-sm" loading="lazy" />
+                    ) : (
+                      <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-white">
+                        {platformInitial(p.platform)}
+                      </span>
+                    )}
                     {formatPlatform(p.platform)} <span className="text-muted">({p.c.toLocaleString()})</span>
                   </Link>
                 );
