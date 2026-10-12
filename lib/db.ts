@@ -354,15 +354,21 @@ export async function browseByArtist(
   page: number,
   perPage: number
 ): Promise<{ dramas: DramaRow[]; total: number }> {
+  // NOTE: never SELECT * here — the full row is ~16MB across all matches,
+  // which blows Next.js's 2MB fetch-cache limit and 500s the page.
   const rows = (await sql`
-    SELECT * FROM dramas
+    SELECT id, title, poster_url, episode_count, platform, has_videos,
+           alt_source, scraped_at, cast_data FROM dramas
     WHERE COALESCE(is_duplicate,0) = 0 AND cast_data IS NOT NULL AND cast_data != ''
-  `) as DramaRow[];
+  `) as (DramaRow & { scraped_at: string | Date | null; cast_data: string })[];
   const want = actor.toLowerCase();
   const matched = rows.filter((d) =>
     parseCast(d.cast_data).some((c) => c.actor.toLowerCase() === want)
   );
-  matched.sort((a, b) => (b.scraped_at ?? "").localeCompare(a.scraped_at ?? ""));
+  // scraped_at arrives as a Date from the driver — compare numerically.
+  const ts = (v: string | Date | null | undefined) =>
+    v instanceof Date ? v.getTime() : Date.parse(String(v ?? "")) || 0;
+  matched.sort((a, b) => ts(b.scraped_at) - ts(a.scraped_at));
   const total = matched.length;
   const offset = (page - 1) * perPage;
   return { dramas: matched.slice(offset, offset + perPage), total };
