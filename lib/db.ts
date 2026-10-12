@@ -403,3 +403,17 @@ export async function getTopImdb(limit: number): Promise<TopImdbEntry[]> {
     return [];
   }
 }
+
+/** Newest dramas added to the collection, optionally filtered by source. */
+export async function getNewArrivals(source: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
+  const cond = source === "all" ? "COALESCE(is_duplicate,0)=0" : "COALESCE(is_duplicate,0)=0 AND source=$1";
+  const args = source === "all" ? [] : [source];
+  const [dramas, countRows] = await Promise.all([
+    sql.query(
+      `SELECT * FROM dramas WHERE ${cond} ORDER BY scraped_at DESC LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
+      args
+    ),
+    sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE ${cond}`, args),
+  ]);
+  return { dramas: dramas as DramaRow[], total: Number((countRows as { c: string }[])[0]?.c ?? 0) };
+}

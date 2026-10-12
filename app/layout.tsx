@@ -29,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/explore#tropes" className="hover:text-text">Tropes</Link>
               <Link href="/artists" className="hover:text-text">Artists</Link>
               <Link href="/top-imdb" className="hover:text-text">Top IMDb</Link>
+              <Link href="/new" className="hover:text-text">New</Link>
             </nav>
             <div className="ml-auto">
               <LogoutButton />

@@ -43,32 +43,13 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
 
       <WatchClient
         dramaId={drama.id}
+        dramaTitle={drama.title}
         episode={ep}
         totalEps={totalEps}
         videoUrl={videoUrl}
         dailymotionEmbed={dm ? `https://www.dailymotion.com/embed/video/${dm}` : null}
         resumeAt={resumeAt}
       />
-
-      {/* Prev / Next */}
-      <div className="flex items-center justify-between">
-        {ep > 1 ? (
-          <Link
-            href={`/watch/${encodeURIComponent(drama.id)}/${ep - 1}`}
-            className="glass rounded-xl px-5 py-2 text-sm font-bold text-slate-200 hover:text-fuchsia-300"
-          >
-            ← EP {ep - 1}
-          </Link>
-        ) : <span />}
-        {totalEps > 0 && ep < totalEps ? (
-          <Link
-            href={`/watch/${encodeURIComponent(drama.id)}/${ep + 1}`}
-            className="glass rounded-xl px-5 py-2 text-sm font-bold text-slate-200 hover:text-fuchsia-300"
-          >
-            EP {ep + 1} →
-          </Link>
-        ) : <span />}
-      </div>
 
       {!videoUrl && !dm && (
         <div className="glass rounded-xl p-8 text-center text-sm text-slate-400">

@@ -6,6 +6,7 @@ import Player from "@/components/Player";
 
 export default function WatchClient({
   dramaId,
+  dramaTitle,
   episode,
   totalEps,
   videoUrl,
@@ -13,6 +14,7 @@ export default function WatchClient({
   resumeAt,
 }: {
   dramaId: string;
+  dramaTitle: string;
   episode: number;
   totalEps: number;
   videoUrl: string | null;
@@ -27,8 +29,12 @@ export default function WatchClient({
     }
   }, [router, dramaId, episode, totalEps]);
 
+  const onNavigate = useCallback((ep: number) => {
+    router.push(`/watch/${encodeURIComponent(dramaId)}/${ep}`);
+  }, [router, dramaId]);
+
   if (videoUrl) {
-    return <Player dramaId={dramaId} episode={episode} videoUrl={videoUrl} resumeAt={resumeAt} onEnded={onEnded} />;
+    return <Player dramaId={dramaId} dramaTitle={dramaTitle} episode={episode} totalEps={totalEps} videoUrl={videoUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} />;
   }
 
   if (dailymotionEmbed) {
