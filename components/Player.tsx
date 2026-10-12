@@ -46,6 +46,7 @@ export default function Player({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [muted, setMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
   const [flash, setFlash] = useState<"-10" | "+10" | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -119,6 +120,16 @@ export default function Player({
     if (!video) return;
     video.muted = !video.muted;
     setMuted(video.muted);
+    pokeControls();
+  }
+
+  function onVolumeChange(v: number) {
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = v;
+    video.muted = v === 0;
+    setVolume(v);
+    setMuted(v === 0);
     pokeControls();
   }
 
@@ -292,9 +303,21 @@ export default function Player({
           <button onClick={() => seek(10)} className="rounded px-1.5 py-1 text-xs font-extrabold hover:bg-white/10" aria-label="Forward 10 seconds">
             +10
           </button>
-          <button onClick={toggleMute} className="rounded p-1.5 text-base hover:bg-white/10" aria-label={muted ? "Unmute" : "Mute"}>
-            {muted ? "🔇" : "🔊"}
-          </button>
+          <div className="group/vol flex items-center">
+            <button onClick={toggleMute} className="rounded p-1.5 text-base hover:bg-white/10" aria-label={muted ? "Unmute" : "Mute"}>
+              {muted || volume === 0 ? "🔇" : "🔊"}
+            </button>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={muted ? 0 : Math.round(volume * 100)}
+              onChange={(e) => onVolumeChange(Number(e.target.value) / 100)}
+              onClick={(e) => e.stopPropagation()}
+              className="h-1 w-0 cursor-pointer appearance-none rounded bg-white/30 opacity-0 accent-primary transition-all duration-200 group-hover/vol:w-20 group-hover/vol:opacity-100"
+              aria-label="Volume"
+            />
+          </div>
           <span className="ml-1 text-xs font-medium text-white/80">
             {fmt(progress)} / {fmt(duration)}
           </span>
