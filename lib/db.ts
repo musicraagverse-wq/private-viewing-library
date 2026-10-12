@@ -335,7 +335,7 @@ export async function getArtists(): Promise<ArtistEntry[]> {
       nconst: key.startsWith("nm") ? key : null,
       photo_url: photoMap.get(key) ?? null,
     }))
-    .sort((a, b) => b.count - a.count || a.actor.localeCompare(b.actor));
+    .sort((a, b) => a.actor.localeCompare(b.actor));
 }
 
 /** Headshot URL for an actor by name (used on the artist detail page). */

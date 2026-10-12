@@ -9,17 +9,40 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-export default async function ArtistsPage() {
-  const artists = await getArtists();
+export default async function ArtistsPage({
+  searchParams,
+}: {
+  searchParams?: { q?: string };
+}) {
+  const q = (searchParams?.q ?? "").trim();
+  const all = await getArtists();
+  const artists = q
+    ? all.filter((a) => a.actor.toLowerCase().includes(q.toLowerCase()))
+    : all;
 
   return (
     <div className="space-y-10">
       <section>
         <h1 className="text-4xl font-bold sm:text-5xl">Artists</h1>
         <p className="mt-2 text-sm text-muted">
-          {artists.length.toLocaleString()} actors &amp; actresses across your
+          {all.length.toLocaleString()} actors &amp; actresses across your
           collection — tap one to see their dramas.
         </p>
+        <form method="GET" className="mt-4 flex max-w-md gap-2">
+          <input
+            type="search"
+            name="q"
+            defaultValue={q}
+            placeholder="Search artists…"
+            className="w-full rounded-xl border border-border bg-surface px-4 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+          >
+            Search
+          </button>
+        </form>
       </section>
 
       <section>
@@ -55,7 +78,9 @@ export default async function ArtistsPage() {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted">No cast data yet.</p>
+          <p className="text-sm text-muted">
+            No artists found{q ? ` for “${q}”` : ""}.
+          </p>
         )}
       </section>
     </div>
