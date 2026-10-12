@@ -173,7 +173,7 @@ export default function Player({
   const pct = duration > 0 ? (progress / duration) * 100 : 0;
 
   return (
-    <div className="relative mx-auto aspect-video w-full select-none overflow-hidden rounded-xl bg-black">
+    <div className="relative mx-auto aspect-[9/16] max-h-[82vh] w-full max-w-[420px] select-none overflow-hidden rounded-xl bg-black">
       <video
         ref={videoRef}
         playsInline
