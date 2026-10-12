@@ -9,19 +9,60 @@ function initials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+function letterOf(name: string): string {
+  const ch = name.charAt(0).toUpperCase();
+  return /[A-Z]/.test(ch) ? ch : "#";
+}
+
+function hrefWith(p: { q?: string; letter?: string; photo?: string }): string {
+  const sp = new URLSearchParams();
+  if (p.q) sp.set("q", p.q);
+  if (p.letter) sp.set("letter", p.letter);
+  if (p.photo) sp.set("photo", p.photo);
+  const s = sp.toString();
+  return `/artists${s ? `?${s}` : ""}`;
+}
+
 export default async function ArtistsPage({
   searchParams,
 }: {
-  searchParams?: { q?: string };
+  searchParams?: { q?: string; letter?: string; photo?: string };
 }) {
   const q = (searchParams?.q ?? "").trim();
+  const letter = (searchParams?.letter ?? "").toUpperCase();
+  const photosOnly = searchParams?.photo === "1";
   const all = await getArtists();
-  const artists = q
-    ? all.filter((a) => a.actor.toLowerCase().includes(q.toLowerCase()))
-    : all;
+
+  const letterCounts = new Map<string, number>();
+  let photoCount = 0;
+  for (const a of all) {
+    const k = letterOf(a.actor);
+    letterCounts.set(k, (letterCounts.get(k) ?? 0) + 1);
+    if (a.photo_url) photoCount++;
+  }
+  const hasOther = Array.from(letterCounts.keys()).some((k) => k === "#");
+
+  const ql = q.toLowerCase();
+  const artists = all.filter((a) => {
+    if (ql && !a.actor.toLowerCase().includes(ql)) return false;
+    if (letter && letterOf(a.actor) !== letter) return false;
+    if (photosOnly && !a.photo_url) return false;
+    return true;
+  });
+
+  const filtering = q !== "" || letter !== "" || photosOnly;
+
+  const chipCls = (active: boolean) =>
+    `rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+      active
+        ? "bg-primary text-white"
+        : "border border-border bg-surface text-muted hover:text-text"
+    }`;
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-8">
       <section>
         <h1 className="text-4xl font-bold sm:text-5xl">Artists</h1>
         <p className="mt-2 text-sm text-muted">
@@ -29,6 +70,8 @@ export default async function ArtistsPage({
           collection — tap one to see their dramas.
         </p>
         <form method="GET" className="mt-4 flex max-w-md gap-2">
+          {letter && <input type="hidden" name="letter" value={letter} />}
+          {photosOnly && <input type="hidden" name="photo" value="1" />}
           <input
             type="search"
             name="q"
@@ -45,7 +88,58 @@ export default async function ArtistsPage({
         </form>
       </section>
 
+      <section aria-label="Browse artists">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Link href={hrefWith({ q })} className={chipCls(!filtering)}>
+            All
+          </Link>
+          <Link
+            href={hrefWith({ q, photo: "1" })}
+            className={chipCls(photosOnly && !letter)}
+          >
+            📷 Photos ({photoCount.toLocaleString()})
+          </Link>
+          {LETTERS.map((L) => {
+            const n = letterCounts.get(L) ?? 0;
+            if (n === 0) return null;
+            return (
+              <Link
+                key={L}
+                href={hrefWith({ q, letter: L, photo: photosOnly ? "1" : undefined })}
+                className={chipCls(letter === L)}
+                title={`${n.toLocaleString()} artists`}
+              >
+                {L}
+              </Link>
+            );
+          })}
+          {hasOther && (
+            <Link
+              href={hrefWith({ q, letter: "#", photo: photosOnly ? "1" : undefined })}
+              className={chipCls(letter === "#")}
+            >
+              #
+            </Link>
+          )}
+        </div>
+      </section>
+
       <section>
+        <p className="mb-3 text-sm text-muted">
+          {filtering ? (
+            <>
+              {artists.length.toLocaleString()} result{artists.length === 1 ? "" : "s"}
+              {letter && <> starting with “{letter}”</>}
+              {photosOnly && <> with photos</>}
+              {q && <> matching “{q}”</>} —{" "}
+              <Link href="/artists" className="text-primary hover:underline">
+                clear
+              </Link>
+            </>
+          ) : (
+            <>Showing all artists A–Z</>
+          )}
+        </p>
         {artists.length > 0 ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {artists.map((a) => (
@@ -78,9 +172,7 @@ export default async function ArtistsPage({
             ))}
           </div>
         ) : (
-          <p className="text-sm text-muted">
-            No artists found{q ? ` for “${q}”` : ""}.
-          </p>
+          <p className="text-sm text-muted">No artists found.</p>
         )}
       </section>
     </div>
