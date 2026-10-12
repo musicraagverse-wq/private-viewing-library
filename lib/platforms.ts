@@ -56,8 +56,16 @@ const PLATFORM_DOMAINS: Record<string, string> = {
   "ziptaletv": "ziptaletv.com",
 };
 
+/** Official logo files served locally (higher quality than favicon service).
+ *  Verified from the platform's own site. */
+const PLATFORM_LOCAL_LOGOS: Record<string, string> = {
+  "dramapops": "/platform-logos/dramapops.png",
+};
+
 export function platformLogo(platform: string): string | null {
-  const d = PLATFORM_DOMAINS[platform.toLowerCase()];
+  const key = platform.toLowerCase();
+  if (PLATFORM_LOCAL_LOGOS[key]) return PLATFORM_LOCAL_LOGOS[key];
+  const d = PLATFORM_DOMAINS[key];
   return d ? `https://www.google.com/s2/favicons?domain=${d}&sz=64` : null;
 }
 
