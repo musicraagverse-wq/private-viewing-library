@@ -4,6 +4,7 @@ import { getDrama, getDuplicatesOf, getProgress, pingDb, browseByGenre, getPlatf
 import { parseEpisodeUrls, dailymotionId } from "@/lib/types";
 import { Poster } from "@/components/DramaCard";
 import DramaCard from "@/components/DramaCard";
+import PlatformMark from "@/components/PlatformMark";
 
 export const dynamic = "force-dynamic";
 
@@ -77,7 +78,7 @@ export default async function DramaDetail({ params }: { params: { id: string } }
           <div className="flex-1">
             <h1 className="text-2xl font-extrabold sm:text-3xl">{drama.title}</h1>
             <div className="mt-2 text-sm text-primary font-semibold">
-              {drama.platform ?? ""}
+              {drama.platform ? <PlatformMark platform={drama.platform} /> : ""}
             </div>
             <div className="mt-1 text-sm text-muted">
               {epCount > 0 ? `${epCount} Episodes` : "Episodes unknown"}
@@ -165,7 +166,9 @@ export default async function DramaDetail({ params }: { params: { id: string } }
         <div className="rounded-lg border border-border bg-surface p-4">
           <div className="flex items-center justify-between py-2">
             <span className="text-sm font-semibold">Primary Platform</span>
-            <span className="text-sm text-primary font-semibold">{drama.platform ?? "—"}</span>
+            <span className="text-sm text-primary font-semibold">
+              {drama.platform ? <PlatformMark platform={drama.platform} /> : "—"}
+            </span>
           </div>
           <div className="flex items-center justify-between border-t border-border py-2">
             <span className="text-sm font-semibold">Episodes</span>
