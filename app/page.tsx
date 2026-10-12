@@ -4,6 +4,7 @@ import DramaCard, { Poster } from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import ContinueWatching from "@/components/ContinueWatching";
 import { platformLogo, formatPlatform } from "@/lib/platforms";
+import { genreIcon, tropeIcon } from "@/lib/tag-icons";
 
 export const dynamic = "force-dynamic";
 
@@ -182,15 +183,19 @@ export default async function Home({
           <section>
             <h2 className="mb-4 text-2xl font-bold">Popular Tropes & Themes</h2>
             <div className="flex flex-wrap gap-2">
-              {tropes.slice(0, 20).map((t) => (
-                <Link
-                  key={t.trope}
-                  href={`/trope/${encodeURIComponent(t.trope)}`}
-                  className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-primary hover:text-primary"
-                >
-                  {t.trope} <span className="text-muted">({t.c.toLocaleString()})</span>
-                </Link>
-              ))}
+              {tropes.slice(0, 20).map((t) => {
+                const icon = tropeIcon(t.trope);
+                return (
+                  <Link
+                    key={t.trope}
+                    href={`/trope/${encodeURIComponent(t.trope)}`}
+                    className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-primary hover:text-primary"
+                  >
+                    {icon && <span>{icon}</span>}
+                    {t.trope} <span className="text-muted">({t.c.toLocaleString()})</span>
+                  </Link>
+                );
+              })}
             </div>
           </section>
 
@@ -198,15 +203,19 @@ export default async function Home({
           <section>
             <h2 className="mb-4 text-2xl font-bold">Browse by Genre</h2>
             <div className="flex flex-wrap gap-2">
-              {genres.slice(0, 20).map((g) => (
-                <Link
-                  key={g.genre}
-                  href={`/genre/${encodeURIComponent(g.genre)}`}
-                  className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-primary hover:text-primary"
-                >
-                  {g.genre} <span className="text-muted">({g.c.toLocaleString()})</span>
-                </Link>
-              ))}
+              {genres.slice(0, 20).map((g) => {
+                const icon = genreIcon(g.genre);
+                return (
+                  <Link
+                    key={g.genre}
+                    href={`/genre/${encodeURIComponent(g.genre)}`}
+                    className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-primary hover:text-primary"
+                  >
+                    {icon && <span>{icon}</span>}
+                    {g.genre} <span className="text-muted">({g.c.toLocaleString()})</span>
+                  </Link>
+                );
+              })}
             </div>
           </section>
 

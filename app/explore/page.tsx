@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getGenres, getTropes, getPlatforms, COLLECTIONS } from "@/lib/db";
 import { platformLogo, formatPlatform } from "@/lib/platforms";
+import { genreIcon, tropeIcon } from "@/lib/tag-icons";
 
 export const dynamic = "force-dynamic";
 
@@ -46,15 +47,19 @@ export default async function ExplorePage() {
       <section id="genres" className="scroll-mt-24">
         <h2 className="mb-4 text-2xl font-bold">Genres</h2>
         <div className="flex flex-wrap gap-2">
-          {genres.map((g) => (
-            <Link
-              key={g.genre}
-              href={`/genre/${encodeURIComponent(g.genre)}`}
-              className={chip}
-            >
-              {g.genre} <span className="text-muted">({g.c.toLocaleString()})</span>
-            </Link>
-          ))}
+          {genres.map((g) => {
+            const icon = genreIcon(g.genre);
+            return (
+              <Link
+                key={g.genre}
+                href={`/genre/${encodeURIComponent(g.genre)}`}
+                className={`${chip} flex items-center gap-1.5`}
+              >
+                {icon && <span>{icon}</span>}
+                {g.genre} <span className="text-muted">({g.c.toLocaleString()})</span>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
@@ -83,15 +88,19 @@ export default async function ExplorePage() {
           The classic drama formulas — spotted in titles &amp; synopses.
         </p>
         <div className="flex flex-wrap gap-2">
-          {tropes.map((t) => (
-            <Link
-              key={t.trope}
-              href={`/trope/${encodeURIComponent(t.trope)}`}
-              className={chip}
-            >
-              {t.trope} <span className="text-muted">({t.c.toLocaleString()})</span>
-            </Link>
-          ))}
+          {tropes.map((t) => {
+            const icon = tropeIcon(t.trope);
+            return (
+              <Link
+                key={t.trope}
+                href={`/trope/${encodeURIComponent(t.trope)}`}
+                className={`${chip} flex items-center gap-1.5`}
+              >
+                {icon && <span>{icon}</span>}
+                {t.trope} <span className="text-muted">({t.c.toLocaleString()})</span>
+              </Link>
+            );
+          })}
         </div>
       </section>
     </div>
