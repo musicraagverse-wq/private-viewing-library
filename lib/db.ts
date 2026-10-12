@@ -387,15 +387,23 @@ export interface TopImdbEntry {
 /** Top IMDb-rated dramas by weighted rating (IMDb Top-250 formula).
  *  minVotes=25 keeps ratings meaningful; maxVotes=5000 excludes a small set
  *  of short dramas wrongly mapped to famous TV series with the same title. */
-export async function getTopImdb(limit: number): Promise<TopImdbEntry[]> {
+export type TopImdbSort = "weighted" | "rating" | "votes";
+
+export async function getTopImdb(limit: number, sort: TopImdbSort = "weighted"): Promise<TopImdbEntry[]> {
   try {
+    const orderBy =
+      sort === "rating"
+        ? sql`ORDER BY imdb_rating DESC, imdb_votes DESC`
+        : sort === "votes"
+          ? sql`ORDER BY imdb_votes DESC`
+          : sql`ORDER BY imdb_wr DESC`;
     const rows = (await sql`
       SELECT id, title, poster_url, imdb_id, imdb_rating, imdb_votes, imdb_wr
       FROM dramas
       WHERE COALESCE(is_duplicate,0) = 0
         AND imdb_wr IS NOT NULL
         AND imdb_votes >= 25 AND imdb_votes <= 5000
-      ORDER BY imdb_wr DESC
+      ${orderBy}
       LIMIT ${limit}
     `) as TopImdbEntry[];
     return rows;

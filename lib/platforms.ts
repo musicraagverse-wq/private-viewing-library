@@ -6,6 +6,9 @@ const PLATFORM_DOMAINS: Record<string, string> = {
   dramabox: "dramabox.com",
   reelshort: "reelshort.com",
   vibeshort: "vibeshort.org",
+  netshort: "netshort.com",
+  dramawave: "mydramawave.com",
+  shortmax: "shorttv.live",
 };
 
 export function platformLogo(platform: string): string | null {
