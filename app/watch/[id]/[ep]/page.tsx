@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDrama, getProgress, pingDb } from "@/lib/db";
+import { getDrama, getProgress, pingDb, browseDramas } from "@/lib/db";
 import { parseEpisodeUrls, dailymotionId } from "@/lib/types";
 import WatchClient from "./WatchClient";
 
@@ -30,6 +30,25 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
   const progress = await getProgress(drama.id);
   const resumeAt = progress && progress.episode === ep ? progress.position_seconds : 0;
 
+  // "Up next" recommendations for the end-of-drama screen (same platform, with videos)
+  let upNext: { id: string; title: string; poster_url: string | null }[] = [];
+  try {
+    const recs = await browseDramas({
+      q: "",
+      source: "",
+      platform: drama.platform ?? "",
+      page: 1,
+      perPage: 7,
+      onlyWithVideos: true,
+    });
+    upNext = recs
+      .filter((r) => r.id !== drama.id)
+      .slice(0, 6)
+      .map((r) => ({ id: r.id, title: r.title, poster_url: r.poster_url ?? null }));
+  } catch {
+    upNext = [];
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
@@ -49,6 +68,7 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
         videoUrl={videoUrl}
         dailymotionEmbed={dm ? `https://www.dailymotion.com/embed/video/${dm}` : null}
         resumeAt={resumeAt}
+        upNext={upNext}
       />
 
       {!videoUrl && !dm && (
