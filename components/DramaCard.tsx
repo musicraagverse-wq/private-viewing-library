@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SaveButtons } from "./SavedLists";
 
 export type DramaRow = {
   id: string;
@@ -51,6 +52,7 @@ export default function DramaCard({ drama }: { drama: DramaRow }) {
           posterUrl={drama.poster_url}
           className="h-full w-full transition-transform duration-300 group-hover:scale-105"
         />
+        <SaveButtons dramaId={drama.id} />
         {drama.has_videos ? (
           <div className="absolute left-2 top-2 rounded bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
             ▶ Free

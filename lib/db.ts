@@ -425,3 +425,62 @@ export async function getNewArrivals(source: string, page: number, perPage: numb
   ]);
   return { dramas: dramas as DramaRow[], total: Number((countRows as { c: string }[])[0]?.c ?? 0) };
 }
+
+/* ---------- Saved lists: favourites + watch later ---------- */
+
+export type ListType = "favourite" | "watchlater";
+
+async function ensureSavedTable(): Promise<void> {
+  await sql`
+    CREATE TABLE IF NOT EXISTS saved_dramas (
+      drama_id TEXT NOT NULL,
+      list_type TEXT NOT NULL CHECK (list_type IN ('favourite','watchlater')),
+      added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (drama_id, list_type)
+    )
+  `;
+}
+
+/** All saved drama ids, grouped by list. Used to hydrate the client once per page. */
+export async function getSavedIds(): Promise<{ favourite: string[]; watchlater: string[] }> {
+  await ensureSavedTable();
+  const rows = (await sql`SELECT drama_id, list_type FROM saved_dramas`) as { drama_id: string; list_type: ListType }[];
+  const out = { favourite: [] as string[], watchlater: [] as string[] };
+  for (const r of rows) {
+    if (r.list_type === "favourite") out.favourite.push(r.drama_id);
+    else if (r.list_type === "watchlater") out.watchlater.push(r.drama_id);
+  }
+  return out;
+}
+
+export async function addSaved(dramaId: string, listType: ListType): Promise<void> {
+  await ensureSavedTable();
+  await sql`
+    INSERT INTO saved_dramas (drama_id, list_type) VALUES (${dramaId}, ${listType})
+    ON CONFLICT (drama_id, list_type) DO NOTHING
+  `;
+}
+
+export async function removeSaved(dramaId: string, listType: ListType): Promise<void> {
+  await ensureSavedTable();
+  await sql`DELETE FROM saved_dramas WHERE drama_id = ${dramaId} AND list_type = ${listType}`;
+}
+
+/** Saved dramas with full rows, newest first. */
+export async function getSavedDramas(
+  listType: ListType,
+  page: number,
+  perPage: number
+): Promise<{ dramas: DramaRow[]; total: number }> {
+  await ensureSavedTable();
+  const offset = (page - 1) * perPage;
+  const [dramas, countRows] = await Promise.all([
+    sql`
+      SELECT d.* FROM saved_dramas s JOIN dramas d ON d.id = s.drama_id
+      WHERE s.list_type = ${listType}
+      ORDER BY s.added_at DESC LIMIT ${perPage} OFFSET ${offset}
+    `,
+    sql`SELECT COUNT(*) AS c FROM saved_dramas WHERE list_type = ${listType}`,
+  ]);
+  return { dramas: dramas as DramaRow[], total: Number((countRows as { c: string }[])[0]?.c ?? 0) };
+}

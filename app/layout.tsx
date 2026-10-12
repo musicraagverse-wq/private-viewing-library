@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
 import LogoutButton from "@/components/LogoutButton";
+import { SavedListsProvider } from "@/components/SavedLists";
 
 export const metadata: Metadata = {
   title: {
@@ -31,13 +32,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/artists" className="hover:text-text">Artists</Link>
               <Link href="/top-imdb" className="hover:text-text">Top IMDb</Link>
               <Link href="/new" className="hover:text-text">New</Link>
+              <Link href="/favourites" className="hover:text-text">♥ Favourites</Link>
+              <Link href="/watch-later" className="hover:text-text">🔖 Watch Later</Link>
             </nav>
             <div className="ml-auto">
               <LogoutButton />
             </div>
           </div>
         </header>
-        <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6">{children}</main>
+        <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6">
+          <SavedListsProvider>{children}</SavedListsProvider>
+        </main>
         <footer className="border-t border-border">
           <div className="mx-auto max-w-7xl px-4 py-8 text-center text-xs text-muted sm:px-6">
             Short Drama · Your personal collection
