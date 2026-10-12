@@ -3,7 +3,7 @@ import { browseDramas, countDramas, getPlatforms, getContinueWatching, getStats,
 import DramaCard, { Poster } from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import ContinueWatching from "@/components/ContinueWatching";
-import { platformLogo, platformInitial, formatPlatform } from "@/lib/platforms";
+import { platformLogo, platformInitial, formatPlatform, sortPlatforms } from "@/lib/platforms";
 import { genreIcon, tropeIcon } from "@/lib/tag-icons";
 
 export const dynamic = "force-dynamic";
@@ -223,7 +223,7 @@ export default async function Home({
           <section>
             <h2 className="mb-4 text-2xl font-bold">Browse by Platform</h2>
             <div className="flex flex-wrap gap-2">
-              {platforms.slice(0, 20).map((p) => {
+              {sortPlatforms(platforms).slice(0, 20).map((p) => {
                 const logo = platformLogo(p.platform);
                 return (
                   <Link

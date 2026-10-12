@@ -61,6 +61,15 @@ export function platformLogo(platform: string): string | null {
   return d ? `https://www.google.com/s2/favicons?domain=${d}&sz=64` : null;
 }
 
+/** Platforms with real logos first, generic-badge ones after; count desc within each group. */
+export function sortPlatforms<T extends { platform: string; c: number }>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    const la = platformLogo(a.platform) ? 0 : 1;
+    const lb = platformLogo(b.platform) ? 0 : 1;
+    return la - lb || b.c - a.c;
+  });
+}
+
 /** First letter of the pretty name, for the fallback badge. */
 export function platformInitial(platform: string): string {
   const name = formatPlatform(platform);

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getGenres, getTropes, getPlatforms, COLLECTIONS } from "@/lib/db";
-import { platformLogo, platformInitial, formatPlatform } from "@/lib/platforms";
+import { platformLogo, platformInitial, formatPlatform, sortPlatforms } from "@/lib/platforms";
 import { genreIcon, tropeIcon } from "@/lib/tag-icons";
 
 export const dynamic = "force-dynamic";
@@ -66,7 +66,7 @@ export default async function ExplorePage() {
       <section id="platforms" className="scroll-mt-24">
         <h2 className="mb-4 text-2xl font-bold">Platforms</h2>
         <div className="flex flex-wrap gap-2">
-          {platforms.map((p) => {
+          {sortPlatforms(platforms).map((p) => {
             const logo = platformLogo(p.platform);
             return (
               <Link
