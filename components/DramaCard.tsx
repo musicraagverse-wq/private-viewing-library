@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SaveButtons } from "./SavedLists";
+import PlatformMark from "./PlatformMark";
 
 export type DramaRow = {
   id: string;
@@ -68,7 +69,9 @@ export default function DramaCard({ drama }: { drama: DramaRow }) {
           {drama.title}
         </h3>
         <div className="mt-1.5 flex items-center justify-between text-xs text-muted">
-          <span className="truncate">{drama.platform ?? ""}</span>
+          <span className="truncate">
+            {drama.platform ? <PlatformMark platform={drama.platform} className="h-3.5 w-3.5" /> : ""}
+          </span>
           <span>{drama.episode_count ? `${drama.episode_count} eps` : ""}</span>
         </div>
       </div>

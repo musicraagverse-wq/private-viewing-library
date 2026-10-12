@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import LogoutButton from "@/components/LogoutButton";
 import { SavedListsProvider } from "@/components/SavedLists";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: {
@@ -16,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body>
         <header className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center gap-8 px-4 py-4 sm:px-6">
