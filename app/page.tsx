@@ -3,6 +3,7 @@ import { browseDramas, countDramas, getPlatforms, getContinueWatching, getStats,
 import DramaCard, { Poster } from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import ContinueWatching from "@/components/ContinueWatching";
+import { platformLogo, formatPlatform } from "@/lib/platforms";
 
 export const dynamic = "force-dynamic";
 
@@ -213,15 +214,19 @@ export default async function Home({
           <section>
             <h2 className="mb-4 text-2xl font-bold">Browse by Platform</h2>
             <div className="flex flex-wrap gap-2">
-              {platforms.slice(0, 20).map((p) => (
-                <Link
-                  key={p.platform}
-                  href={href(base, { platform: p.platform, page: undefined })}
-                  className="rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-primary hover:text-primary"
-                >
-                  {p.platform} <span className="text-muted">({p.c.toLocaleString()})</span>
-                </Link>
-              ))}
+              {platforms.slice(0, 20).map((p) => {
+                const logo = platformLogo(p.platform);
+                return (
+                  <Link
+                    key={p.platform}
+                    href={href(base, { platform: p.platform, page: undefined })}
+                    className="flex items-center gap-2 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-primary hover:text-primary"
+                  >
+                    {logo && <img src={logo} alt="" className="h-4 w-4 rounded-sm" loading="lazy" />}
+                    {formatPlatform(p.platform)} <span className="text-muted">({p.c.toLocaleString()})</span>
+                  </Link>
+                );
+              })}
             </div>
           </section>
         </>

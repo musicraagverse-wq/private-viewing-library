@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getGenres, getTropes, getPlatforms, COLLECTIONS } from "@/lib/db";
+import { platformLogo, formatPlatform } from "@/lib/platforms";
 
 export const dynamic = "force-dynamic";
 
@@ -60,15 +61,19 @@ export default async function ExplorePage() {
       <section id="platforms" className="scroll-mt-24">
         <h2 className="mb-4 text-2xl font-bold">Platforms</h2>
         <div className="flex flex-wrap gap-2">
-          {platforms.map((p) => (
-            <Link
-              key={p.platform}
-              href={`/?platform=${encodeURIComponent(p.platform)}`}
-              className={chip}
-            >
-              {p.platform} <span className="text-muted">({p.c.toLocaleString()})</span>
-            </Link>
-          ))}
+          {platforms.map((p) => {
+            const logo = platformLogo(p.platform);
+            return (
+              <Link
+                key={p.platform}
+                href={`/?platform=${encodeURIComponent(p.platform)}`}
+                className={`${chip} flex items-center gap-2`}
+              >
+                {logo && <img src={logo} alt="" className="h-4 w-4 rounded-sm" loading="lazy" />}
+                {formatPlatform(p.platform)} <span className="text-muted">({p.c.toLocaleString()})</span>
+              </Link>
+            );
+          })}
         </div>
       </section>
 
