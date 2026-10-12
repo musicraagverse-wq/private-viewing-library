@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   },
   description: "Watch short dramas & mini series.",
   robots: { index: false, follow: false },
+  icons: { icon: "/logo.svg" },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -18,9 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <header className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur">
           <div className="mx-auto flex max-w-7xl items-center gap-8 px-4 py-4 sm:px-6">
-            <Link href="/" className="text-2xl font-extrabold tracking-tight">
-              <span className="text-primary">Short</span>
-              <span className="text-text">Drama</span>
+            <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
+              <img src="/logo.svg" alt="Short Drama logo" className="h-8 w-8 rounded-lg" />
+              <span><span className="text-primary">Short</span><span className="text-text">Drama</span></span>
             </Link>
             <nav className="flex items-center gap-6 text-sm font-semibold text-muted">
               <Link href="/" className="hover:text-text">Home</Link>
