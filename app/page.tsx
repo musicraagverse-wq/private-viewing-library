@@ -1,12 +1,32 @@
 import Link from "next/link";
-import { browseDramas, countDramas, getPlatforms, getContinueWatching, getStats, getMarathons, getFreshArrivals, getGenres, getTropes, pingDb } from "@/lib/db";
-import DramaCard from "@/components/DramaCard";
+import { browseDramas, countDramas, getPlatforms, getContinueWatching, getStats, getFreshArrivals, getGenres, getTropes, getTopImdb, pingDb } from "@/lib/db";
+import DramaCard, { Poster } from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import ContinueWatching from "@/components/ContinueWatching";
 
 export const dynamic = "force-dynamic";
 
 const PER_PAGE = 24;
+
+/** 4-hour rotation slot — homepage picks reshuffle every 4 hours. */
+function rotationSlot() {
+  return Math.floor(Date.now() / (4 * 3600 * 1000));
+}
+
+/** Deterministic shuffle seeded by the rotation slot (mulberry32). */
+function rotatingPick<T>(items: T[], count: number): T[] {
+  if (items.length <= count) return items;
+  let seed = rotationSlot();
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    const j = ((t ^ (t >>> 14)) >>> 0) % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, count);
+}
 
 function href(params: Record<string, string | undefined>, overrides: Record<string, string | undefined> = {}) {
   const merged = { ...params, ...overrides };
@@ -33,24 +53,28 @@ export default async function Home({
   let platforms: Awaited<ReturnType<typeof getPlatforms>> = [];
   let stats = { total: 0, withVideos: 0, withAlt: 0 };
   let continueWatching: Awaited<ReturnType<typeof getContinueWatching>> = [];
-  let trending: Awaited<ReturnType<typeof getMarathons>> = [];
+  let trending: Awaited<ReturnType<typeof browseDramas>> = [];
   let freshArrivals: Awaited<ReturnType<typeof getFreshArrivals>> = [];
+  let topImdb: Awaited<ReturnType<typeof getTopImdb>> = [];
   let genres: Awaited<ReturnType<typeof getGenres>> = [];
   let tropes: Awaited<ReturnType<typeof getTropes>> = [];
   let dbError = false;
 
   try {
     await pingDb();
-    [dramas, total, platforms, stats, trending, freshArrivals, genres, tropes] = await Promise.all([
+    [dramas, total, platforms, stats, freshArrivals, genres, tropes, topImdb] = await Promise.all([
       browseDramas({ q, source: "", platform, page, perPage: PER_PAGE, onlyWithVideos }),
       countDramas(q, "", platform),
       getPlatforms(),
       getStats(),
-      getMarathons(12),
       getFreshArrivals(12),
       getGenres(),
       getTropes(),
+      getTopImdb(50),
     ]);
+    // "Watch Free Now": rotate through watchable dramas every 4 hours
+    const watchable = await browseDramas({ q: "", source: "", platform: "", page: 1, perPage: 60, onlyWithVideos: true });
+    trending = rotatingPick(watchable, 12);
     if (!q && !platform && page === 1) {
       continueWatching = await getContinueWatching(10);
     }
@@ -110,6 +134,38 @@ export default async function Home({
               ))}
             </div>
           </section>
+
+          {/* Top IMDb — rotates every 4 hours */}
+          {topImdb.length > 0 && (
+            <section>
+              <div className="mb-4 flex items-baseline justify-between">
+                <h2 className="text-2xl font-bold">Top IMDb Rated</h2>
+                <Link href="/top-imdb" className="text-sm font-semibold text-primary hover:underline">
+                  View all →
+                </Link>
+              </div>
+              <div className="no-scrollbar flex gap-4 overflow-x-auto pb-2">
+                {rotatingPick(topImdb, 10).map((d, i) => (
+                  <Link
+                    key={d.id}
+                    href={`/drama/${encodeURIComponent(d.id)}`}
+                    className="card-hover w-36 shrink-0 overflow-hidden rounded-xl border border-border bg-surface"
+                  >
+                    <div className="relative">
+                      <span className="absolute left-2 top-2 z-10 rounded-md bg-primary px-2 py-0.5 text-sm font-extrabold text-white">
+                        {i + 1}
+                      </span>
+                      <Poster title={d.title} posterUrl={d.poster_url} className="aspect-[3/4] w-full" />
+                    </div>
+                    <div className="p-2">
+                      <p className="truncate text-sm font-semibold">{d.title}</p>
+                      <p className="text-xs text-muted">★ {d.imdb_rating?.toFixed(1)}</p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Recently Added */}
           <section>
