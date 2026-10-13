@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { SaveButtons } from "./SavedLists";
 import PlatformMark from "./PlatformMark";
 
@@ -25,7 +26,16 @@ function gradientFor(title: string): string {
 
 export function Poster({ title, posterUrl, className }: { title: string; posterUrl: string | null; className?: string }) {
   if (posterUrl) {
-    return <img src={posterUrl} alt={title} loading="lazy" className={`object-cover ${className ?? ""}`} />;
+    return (
+      <Image
+        src={posterUrl}
+        alt={title}
+        loading="lazy"
+        fill
+        sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 12vw"
+        className={`object-cover ${className ?? ""}`}
+      />
+    );
   }
   return (
     <div className={`flex items-center justify-center bg-gradient-to-br p-3 text-center ${gradientFor(title)} ${className ?? ""}`}>

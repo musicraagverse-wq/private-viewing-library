@@ -90,7 +90,7 @@ export default function WatchClient({
             href={`/drama/${encodeURIComponent(d.id)}`}
             className="flex items-center gap-3 rounded-lg bg-surface p-2 transition hover:border-primary"
           >
-            <span className="h-16 w-12 shrink-0 overflow-hidden rounded-md">
+            <span className="relative h-16 w-12 shrink-0 overflow-hidden rounded-md">
               <Poster title={d.title} posterUrl={d.poster_url} className="h-full w-full" />
             </span>
             <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">

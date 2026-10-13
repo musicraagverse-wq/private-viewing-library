@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import Hls from "hls.js";
 
 function fmt(s: number) {
   if (!isFinite(s) || s < 0) return "0:00";
@@ -70,7 +71,7 @@ export default function Player({
     hideTimer.current = setTimeout(() => setControls(false), 3000);
   }, []);
 
-  // Load episode: reset state, resume, try autoplay
+  // Load episode via hls.js (or native for mp4): reset state, resume, try autoplay
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -79,11 +80,29 @@ export default function Player({
     setDuration(0);
     setPlaying(false);
     setStarted(false);
-    video.load();
-    video.play().catch(() => {});
+
+    let hls: Hls | null = null;
+    const isHls = videoUrl.includes(".m3u8");
+    if (isHls && Hls.isSupported()) {
+      hls = new Hls({
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        enableWorker: true,
+      });
+      hls.loadSource(videoUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => {});
+      });
+    } else {
+      video.src = videoUrl;
+      video.load();
+      video.play().catch(() => {});
+    }
     pokeControls();
     return () => {
       if (hideTimer.current) clearTimeout(hideTimer.current);
+      hls?.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoUrl]);
@@ -170,7 +189,6 @@ export default function Player({
         className="h-full w-full"
         playsInline
         preload="auto"
-        src={videoUrl}
         poster={posterUrl ?? undefined}
         onClick={toggle}
         onDoubleClick={(e) => {

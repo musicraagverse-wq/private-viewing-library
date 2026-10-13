@@ -80,7 +80,7 @@ export default function DramaHero({
                       href={`/drama/${encodeURIComponent(d.id)}`}
                       className="flex items-center gap-3 rounded-lg bg-surface p-2 transition hover:border-primary"
                     >
-                      <span className="h-16 w-12 shrink-0 overflow-hidden rounded-md">
+                      <span className="relative h-16 w-12 shrink-0 overflow-hidden rounded-md">
                         <Poster title={d.title} posterUrl={d.poster_url} className="h-full w-full" />
                       </span>
                       <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">
@@ -178,7 +178,7 @@ export default function DramaHero({
     <section className="rounded-lg border border-border bg-surface p-6">
       <div className="flex flex-col gap-6 sm:flex-row">
         <div className="w-40 shrink-0 sm:w-52">
-          <div className="aspect-[3/4] overflow-hidden rounded-lg">
+          <div className="relative aspect-[3/4] overflow-hidden rounded-lg">
             <Poster title={title} posterUrl={posterUrl} className="h-full w-full" />
           </div>
         </div>

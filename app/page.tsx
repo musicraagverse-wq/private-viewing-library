@@ -153,11 +153,11 @@ export default async function Home({
                     href={`/drama/${encodeURIComponent(d.id)}`}
                     className="card-hover w-36 shrink-0 overflow-hidden rounded-xl border border-border bg-surface"
                   >
-                    <div className="relative">
+                    <div className="relative aspect-[3/4]">
                       <span className="absolute left-2 top-2 z-10 rounded-md bg-primary px-2 py-0.5 text-sm font-extrabold text-white">
                         {i + 1}
                       </span>
-                      <Poster title={d.title} posterUrl={d.poster_url} className="aspect-[3/4] w-full" />
+                      <Poster title={d.title} posterUrl={d.poster_url} />
                     </div>
                     <div className="p-2">
                       <p className="truncate text-sm font-semibold">{d.title}</p>

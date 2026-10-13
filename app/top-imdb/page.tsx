@@ -94,7 +94,7 @@ export default async function TopImdbPage({
                 <span className="w-10 shrink-0 text-center text-2xl font-extrabold text-primary">
                   {i + 1}
                 </span>
-                <span className="h-16 w-12 shrink-0 overflow-hidden rounded-md">
+                <span className="relative h-16 w-12 shrink-0 overflow-hidden rounded-md">
                   <Poster title={d.title} posterUrl={d.poster_url} className="h-full w-full" />
                 </span>
                 <span className="min-w-0 flex-1">

@@ -3,6 +3,9 @@ import type { DramaRow, WatchProgress } from "./types";
 
 const sql = neon(process.env.DATABASE_URL!);
 
+/** Slim column list for tile/card listings — never fetch episode_urls/synopsis/cast_data per tile. */
+const CARD_COLS = "id, title, poster_url, platform, episode_count, has_videos, alt_source";
+
 /** Build WHERE clause with $n placeholders for Postgres. */
 function buildWhere(
   q: string,
@@ -59,7 +62,7 @@ export async function browseDramas(opts: BrowseOpts): Promise<DramaRow[]> {
   const limitPh = params.length - 1;
   const offsetPh = params.length;
   return (await sql.query(
-    `SELECT * FROM dramas WHERE ${where} ORDER BY scraped_at DESC LIMIT $${limitPh} OFFSET $${offsetPh}`,
+    `SELECT ${CARD_COLS} FROM dramas WHERE ${where} ORDER BY scraped_at DESC LIMIT $${limitPh} OFFSET $${offsetPh}`,
     params
   )) as DramaRow[];
 }
@@ -190,7 +193,7 @@ export async function browseByGenre(genre: string, page: number, perPage: number
   const pattern = `%"${genre.replace(/"/g, '\\"')}"%`;
   const [dramas, countRows] = await Promise.all([
     sql.query(
-      `SELECT * FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND genres ILIKE $1 ORDER BY scraped_at DESC LIMIT $2 OFFSET $3`,
+      `SELECT ${CARD_COLS} FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND genres ILIKE $1 ORDER BY scraped_at DESC LIMIT $2 OFFSET $3`,
       [pattern, perPage, offset]
     ),
     sql.query(
@@ -206,7 +209,7 @@ export async function browseByTrope(trope: string, page: number, perPage: number
   const pattern = `%"${trope.replace(/"/g, '\\"')}"%`;
   const [dramas, countRows] = await Promise.all([
     sql.query(
-      `SELECT * FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND tropes ILIKE $1 ORDER BY scraped_at DESC LIMIT $2 OFFSET $3`,
+      `SELECT ${CARD_COLS} FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND tropes ILIKE $1 ORDER BY scraped_at DESC LIMIT $2 OFFSET $3`,
       [pattern, perPage, offset]
     ),
     sql.query(
@@ -220,7 +223,7 @@ export async function browseByTrope(trope: string, page: number, perPage: number
 export async function getMarathons(limit = 24): Promise<DramaRow[]> {
   // Longest series (most episodes) — perfect for binge-watching
   return (await sql`
-    SELECT * FROM dramas
+    SELECT ${sql.unsafe(CARD_COLS)} FROM dramas
     WHERE COALESCE(is_duplicate,0) = 0 AND has_videos = 1 AND episode_count > 0
     ORDER BY episode_count DESC LIMIT ${limit}
   `) as DramaRow[];
@@ -228,7 +231,7 @@ export async function getMarathons(limit = 24): Promise<DramaRow[]> {
 
 export async function getFreshArrivals(limit = 24): Promise<DramaRow[]> {
   return (await sql`
-    SELECT * FROM dramas
+    SELECT ${sql.unsafe(CARD_COLS)} FROM dramas
     WHERE COALESCE(is_duplicate,0) = 0
     ORDER BY scraped_at DESC LIMIT ${limit}
   `) as DramaRow[];
@@ -268,7 +271,7 @@ export async function browseCollection(slug: string, page: number, perPage: numb
   const conditions = tropes.map((t) => `tropes ILIKE '%"${t.replace(/"/g, '\\"')}"%'`).join(" OR ");
   const [dramas, countRows] = await Promise.all([
     sql.query(
-      `SELECT * FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND (${conditions}) ORDER BY scraped_at DESC LIMIT $1 OFFSET $2`,
+      `SELECT ${CARD_COLS} FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND (${conditions}) ORDER BY scraped_at DESC LIMIT $1 OFFSET $2`,
       [perPage, offset]
     ),
     sql.query(
@@ -418,7 +421,7 @@ export async function getNewArrivals(source: string, page: number, perPage: numb
   const args = source === "all" ? [] : [source];
   const [dramas, countRows] = await Promise.all([
     sql.query(
-      `SELECT * FROM dramas WHERE ${cond} ORDER BY scraped_at DESC LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
+      `SELECT ${CARD_COLS} FROM dramas WHERE ${cond} ORDER BY scraped_at DESC LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`,
       args
     ),
     sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE ${cond}`, args),
@@ -476,7 +479,7 @@ export async function getSavedDramas(
   const offset = (page - 1) * perPage;
   const [dramas, countRows] = await Promise.all([
     sql`
-      SELECT d.* FROM saved_dramas s JOIN dramas d ON d.id = s.drama_id
+      SELECT ${sql.unsafe(CARD_COLS.replace(/(\w+)/g, "d.$1"))} FROM saved_dramas s JOIN dramas d ON d.id = s.drama_id
       WHERE s.list_type = ${listType}
       ORDER BY s.added_at DESC LIMIT ${perPage} OFFSET ${offset}
     `,
