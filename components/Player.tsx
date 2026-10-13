@@ -46,8 +46,14 @@ export default function Player({
   const [controls, setControls] = useState(true);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [muted, setMuted] = useState(false);
-  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(() =>
+    typeof window !== "undefined" ? localStorage.getItem("sd_muted") === "1" : false
+  );
+  const [volume, setVolume] = useState(() => {
+    if (typeof window === "undefined") return 1;
+    const v = parseFloat(localStorage.getItem("sd_volume") ?? "1");
+    return isNaN(v) ? 1 : Math.min(1, Math.max(0, v));
+  });
   const [flash, setFlash] = useState<"-10" | "+10" | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -83,6 +89,9 @@ export default function Player({
 
     let hls: Hls | null = null;
     const isHls = videoUrl.includes(".m3u8");
+    // restore the user's last volume on every (re)mount
+    video.volume = volume;
+    video.muted = muted;
     if (isHls && Hls.isSupported()) {
       hls = new Hls({
         maxBufferLength: 30,
@@ -134,11 +143,19 @@ export default function Player({
     flashTimer.current = setTimeout(() => setFlash(null), 700);
   }
 
+  function persistVol(v: number, m: boolean) {
+    try {
+      localStorage.setItem("sd_volume", String(v));
+      localStorage.setItem("sd_muted", m ? "1" : "0");
+    } catch {}
+  }
+
   function toggleMute() {
     const video = videoRef.current;
     if (!video) return;
     video.muted = !video.muted;
     setMuted(video.muted);
+    persistVol(volume, video.muted);
     pokeControls();
   }
 
@@ -149,6 +166,7 @@ export default function Player({
     video.muted = v === 0;
     setVolume(v);
     setMuted(v === 0);
+    persistVol(v, v === 0);
     pokeControls();
   }
 
