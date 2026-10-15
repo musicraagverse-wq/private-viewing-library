@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
-import Player from "@/components/Player";
+import dynamic from "next/dynamic";
+
+const Player = dynamic(() => import("@/components/Player"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex aspect-video items-center justify-center rounded-xl bg-black">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" aria-label="Loading player" />
+    </div>
+  ),
+});
 import { Poster } from "@/components/DramaCard";
 import PlatformMark from "@/components/PlatformMark";
 import RatingButtons from "@/components/RatingButtons";

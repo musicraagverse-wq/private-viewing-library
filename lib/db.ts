@@ -1,7 +1,13 @@
 import { neon } from "@neondatabase/serverless";
+import { unstable_cache } from "next/cache";
 import type { DramaRow, WatchProgress } from "./types";
 
 const sql = neon(process.env.DATABASE_URL!);
+
+/** Cache for heavy taxonomy aggregations — recomputed at most once an hour. */
+function cached<T>(key: string, fn: () => Promise<T>): () => Promise<T> {
+  return unstable_cache(fn, ["db", key], { revalidate: 3600, tags: [`db:${key}`] });
+}
 
 /** Slim column list for tile/card listings — never fetch episode_urls/synopsis/cast_data per tile. */
 const CARD_COLS = "id, title, poster_url, platform, episode_count, has_videos, alt_source";
@@ -97,13 +103,13 @@ export async function getDuplicatesOf(
   }[];
 }
 
-export async function getPlatforms(): Promise<{ platform: string; c: number }[]> {
+export const getPlatforms = cached("platforms", async (): Promise<{ platform: string; c: number }[]> => {
   return (await sql`
     SELECT platform, COUNT(*) AS c FROM dramas
     WHERE COALESCE(is_duplicate,0) = 0 AND platform IS NOT NULL AND platform != ''
     GROUP BY platform ORDER BY c DESC
   `) as { platform: string; c: number }[];
-}
+});
 
 export async function getSources(): Promise<{ source: string; c: number }[]> {
   return (await sql`
@@ -170,7 +176,7 @@ export async function getStats(): Promise<{ total: number; withVideos: number; w
   };
 }
 
-export async function getGenres(): Promise<{ genre: string; c: number }[]> {
+export const getGenres = cached("genres", async (): Promise<{ genre: string; c: number }[]> => {
   // Genres stored as JSON array in genres column
   const rows = (await sql`
     SELECT genres FROM dramas
@@ -191,9 +197,9 @@ export async function getGenres(): Promise<{ genre: string; c: number }[]> {
   return Array.from(counter.entries())
     .map(([genre, c]) => ({ genre, c }))
     .sort((a, b) => b.c - a.c);
-}
+});
 
-export async function getTropes(): Promise<{ trope: string; c: number }[]> {
+export const getTropes = cached("tropes", async (): Promise<{ trope: string; c: number }[]> => {
   const rows = (await sql`
     SELECT tropes FROM dramas
     WHERE COALESCE(is_duplicate,0) = 0 AND tropes IS NOT NULL AND tropes != ''
@@ -213,7 +219,7 @@ export async function getTropes(): Promise<{ trope: string; c: number }[]> {
   return Array.from(counter.entries())
     .map(([trope, c]) => ({ trope, c }))
     .sort((a, b) => b.c - a.c);
-}
+});
 
 export async function browseByGenre(genre: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
   const offset = (page - 1) * perPage;
