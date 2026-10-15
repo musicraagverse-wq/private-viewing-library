@@ -8,15 +8,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Short Drama: clean dark theme with red accent (EveryDrama-inspired)
-        bg: "#0f0f13",
-        surface: "#1a1a21",
-        card: "#22222b",
-        border: "#2e2e38",
-        primary: "#e50914",
-        primarydark: "#b20710",
-        text: "#ffffff",
-        muted: "#9ca3af",
+        // ShortDrama design tokens — luxurious cinematic dark theme
+        bg: "#0B0C10",          // primary background
+        surface: "#121318",     // secondary background
+        card: "#1A1C24",        // elevated surface
+        border: "#292B34",      // subtle borders
+        primary: "#E12535",     // brand red
+        primaryhover: "#F03545",// interactive hover red
+        primarydark: "#b20710", // deep red (legacy)
+        text: "#F5F5F7",        // primary text
+        muted: "#A0A3AE",       // secondary text
         gold: "#f5c518",
       },
       fontFamily: {

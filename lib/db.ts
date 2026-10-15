@@ -685,3 +685,83 @@ export async function getDramasByIds(ids: string[]): Promise<DramaRow[]> {
     return [];
   }
 }
+
+export interface FilterOpts {
+  q: string;
+  genre: string;
+  trope: string;
+  platform: string;
+  minRating: number; // 0 = any
+  epRange: "" | "short" | "medium" | "long";
+  onlyWithVideos: boolean;
+  sort: "newest" | "rating" | "az" | "za";
+  page: number;
+  perPage: number;
+}
+
+/** Prime Video-style combinable filters over the full catalog. */
+export async function browseFiltered(opts: FilterOpts): Promise<{ dramas: DramaRow[]; total: number }> {
+  const { q, genre, trope, platform, minRating, epRange, onlyWithVideos, sort, page, perPage } = opts;
+  const params: (string | number)[] = [];
+  const where: string[] = ["COALESCE(is_duplicate,0) = 0"];
+
+  if (q) {
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+    where.push(`(title ILIKE $${params.length - 2} OR synopsis ILIKE $${params.length - 1} OR cast_data ILIKE $${params.length})`);
+  }
+  if (genre) {
+    params.push(`%"${genre.replace(/"/g, '\\"')}"%`);
+    where.push(`genres ILIKE $${params.length}`);
+  }
+  if (trope) {
+    params.push(`%"${trope.replace(/"/g, '\\"')}"%`);
+    where.push(`tropes ILIKE $${params.length}`);
+  }
+  if (platform) {
+    params.push(platform);
+    where.push(`platform = $${params.length}`);
+  }
+  if (minRating > 0) {
+    params.push(minRating);
+    where.push(`imdb_rating >= $${params.length}`);
+  }
+  if (epRange === "short") where.push("episode_count IS NOT NULL AND episode_count < 40");
+  else if (epRange === "medium") where.push("episode_count >= 40 AND episode_count <= 80");
+  else if (epRange === "long") where.push("episode_count > 80");
+  if (onlyWithVideos) where.push("has_videos = 1");
+
+  const orderBy =
+    sort === "rating" ? "imdb_wr DESC NULLS LAST"
+    : sort === "az" ? "title ASC"
+    : sort === "za" ? "title DESC"
+    : "scraped_at DESC";
+
+  const whereSql = where.join(" AND ");
+  const offset = (page - 1) * perPage;
+  const [dramas, countRows] = await Promise.all([
+    sql.query(
+      `SELECT ${CARD_COLS} FROM dramas WHERE ${whereSql} ORDER BY ${orderBy} LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, perPage, offset]
+    ),
+    sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE ${whereSql}`, params),
+  ]);
+  return { dramas: dramas as DramaRow[], total: Number((countRows as { c: string }[])[0]?.c ?? 0) };
+}
+
+/** Hidden Gems: highly rated dramas few people have saved — quality without the hype. */
+export async function getHiddenGems(limit = 12): Promise<DramaRow[]> {
+  try {
+    await ensureSavedTable();
+    const rows = (await sql`
+      SELECT ${sql.unsafe(CARD_COLS)} FROM dramas d
+      WHERE COALESCE(d.is_duplicate,0) = 0
+        AND d.imdb_wr IS NOT NULL AND d.imdb_votes >= 25 AND d.imdb_votes <= 5000
+        AND NOT EXISTS (SELECT 1 FROM saved_dramas s WHERE s.drama_id = d.id)
+      ORDER BY d.imdb_wr DESC
+      LIMIT ${limit}
+    `) as DramaRow[];
+    return rows;
+  } catch {
+    return [];
+  }
+}

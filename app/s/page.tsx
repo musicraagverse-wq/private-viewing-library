@@ -28,7 +28,7 @@ export default async function SharedListPage({
           <p className="mx-auto mt-2 max-w-md text-sm text-muted">
             The link may be incomplete. Ask the sender to copy it again.
           </p>
-          <Link href="/" className="mt-4 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold text-white hover:bg-primarydark">
+          <Link href="/" className="mt-4 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold text-white hover:bg-primaryhover">
             Browse all dramas
           </Link>
         </div>

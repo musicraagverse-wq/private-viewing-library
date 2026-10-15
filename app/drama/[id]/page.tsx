@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getDrama, getProgress, pingDb, getRelatedDramas } from "@/lib/db";
@@ -8,6 +9,25 @@ import PlatformMark from "@/components/PlatformMark";
 import Rail from "@/components/Rail";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+  try {
+    const drama = await getDrama(decodeURIComponent(params.id));
+    if (!drama) return { title: "Drama not found" };
+    const desc = drama.synopsis?.slice(0, 160) ?? `Watch ${drama.title} — short drama.`;
+    return {
+      title: drama.title,
+      description: desc,
+      openGraph: {
+        title: drama.title,
+        description: desc,
+        images: drama.poster_url ? [{ url: drama.poster_url, alt: drama.title }] : undefined,
+      },
+    };
+  } catch {
+    return { title: "Short Drama" };
+  }
+}
 
 export default async function DramaDetail({ params }: { params: { id: string } }) {
   const id = decodeURIComponent(params.id);

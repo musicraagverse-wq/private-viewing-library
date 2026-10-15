@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { browseDramas, countDramas, getPlatforms, getContinueWatching, getGenres, getTropes, getTopImdb, getFeaturedDrama, getTrending, getFreshArrivals, pingDb, COLLECTIONS } from "@/lib/db";
+import { browseDramas, countDramas, getPlatforms, getContinueWatching, getGenres, getTropes, getTopImdb, getFeaturedDrama, getTrending, getFreshArrivals, getHiddenGems, pingDb, COLLECTIONS } from "@/lib/db";
 import { MOODS } from "@/lib/moods";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
@@ -56,6 +56,7 @@ export default async function Home({
   let genres: Awaited<ReturnType<typeof getGenres>> = [];
   let tropes: Awaited<ReturnType<typeof getTropes>> = [];
   let featured: Awaited<ReturnType<typeof getFeaturedDrama>> = null;
+  let hiddenGems: Awaited<ReturnType<typeof getHiddenGems>> = [];
   let dbError = false;
 
   try {
@@ -70,10 +71,11 @@ export default async function Home({
       getTopImdb(50),
     ]);
     if (!q && !platform && page === 1) {
-      [continueWatching, trending, featured] = await Promise.all([
+      [continueWatching, trending, featured, hiddenGems] = await Promise.all([
         getContinueWatching(10),
         getTrending(12),
         getFeaturedDrama(rotationSlot()),
+        getHiddenGems(12),
       ]);
     }
   } catch {
@@ -115,7 +117,7 @@ export default async function Home({
           )}
 
           {/* Browse by Mood */}
-          <section aria-label="Browse by mood">
+          <section aria-label="Browse by mood" id="moods" className="scroll-mt-24">
             <div className="mb-4 flex items-baseline justify-between">
               <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Watch by Mood</h2>
             </div>
@@ -134,7 +136,7 @@ export default async function Home({
           </section>
 
           {/* Curated collections — editorial */}
-          <section aria-label="Curated collections">
+          <section aria-label="Curated collections" id="collections" className="scroll-mt-24">
             <div className="mb-4 flex items-baseline justify-between">
               <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Curated Collections</h2>
               <Link href="/explore" className="shrink-0 text-sm font-semibold text-primary hover:underline">
@@ -180,6 +182,15 @@ export default async function Home({
           {freshArrivals.length > 0 && (
             <Rail title="New Arrivals" href="/new">
               {freshArrivals.map((d) => (
+                <DramaCard key={d.id} drama={d} fixedWidth />
+              ))}
+            </Rail>
+          )}
+
+          {/* Hidden gems — highly rated, rarely saved */}
+          {hiddenGems.length > 0 && (
+            <Rail title="Hidden Gems" subtitle="Highly rated dramas flying under the radar" href="/top-imdb">
+              {hiddenGems.map((d) => (
                 <DramaCard key={d.id} drama={d} fixedWidth />
               ))}
             </Rail>
@@ -284,7 +295,7 @@ export default async function Home({
                     ? `Nothing matches "${q}". Try a different title, an actor's name, or browse by trope or genre instead.`
                     : "Try clearing the filters or browsing a different platform."}
                 </p>
-                <Link href="/" className="mt-4 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold text-white hover:bg-primarydark">
+                <Link href="/" className="mt-4 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold text-white hover:bg-primaryhover">
                   Browse all dramas
                 </Link>
               </div>

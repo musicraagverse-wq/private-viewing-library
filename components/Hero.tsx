@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { DramaRow } from "@/lib/types";
 import PlatformMark from "./PlatformMark";
+import WatchLaterButton from "./WatchLaterButton";
 
 function parseList(raw: string | null): string[] {
   if (!raw) return [];
@@ -93,10 +94,11 @@ export default function Hero({ drama }: { drama: DramaRow }) {
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               href={`/drama/${encodeURIComponent(drama.id)}`}
-              className="rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:bg-primarydark focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               ▶ Watch Now
             </Link>
+            <WatchLaterButton dramaId={drama.id} title={drama.title} />
             <Link
               href={`/drama/${encodeURIComponent(drama.id)}`}
               className="rounded-full border border-white/25 bg-white/5 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:border-white/60"
