@@ -46,7 +46,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading || !password}
-          className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-bold text-white disabled:opacity-40 hover:bg-primaryhover"
+          className="w-full rounded-lg bg-primary px-4 py-3 text-sm font-bold text-black disabled:opacity-40 hover:bg-primaryhover"
         >
           {loading ? "Loading..." : "Enter"}
         </button>

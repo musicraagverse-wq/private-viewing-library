@@ -54,7 +54,7 @@ export default async function TopImdbPage({
             href={hrefWith(n, s.key)}
             className={`rounded-full border px-4 py-2 text-sm font-semibold ${
               s.key === sort
-                ? "border-primary bg-primary text-white"
+                ? "border-primary bg-primary text-black"
                 : "border-border bg-surface text-text hover:border-primary hover:text-primary"
             }`}
           >
@@ -70,7 +70,7 @@ export default async function TopImdbPage({
             href={hrefWith(s, sort)}
             className={`rounded-full border px-4 py-2 text-sm font-semibold ${
               s === n
-                ? "border-primary bg-primary text-white"
+                ? "border-primary bg-primary text-black"
                 : "border-border bg-surface text-text hover:border-primary hover:text-primary"
             }`}
           >

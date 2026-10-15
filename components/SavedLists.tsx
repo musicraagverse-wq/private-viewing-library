@@ -107,7 +107,7 @@ export function SaveButtons({ dramaId }: { dramaId: string }) {
           e.stopPropagation();
           toggle(dramaId, "favourite");
         }}
-        className={`${btn} ${isFav ? "bg-primary text-white" : "bg-black/50 text-white/90 hover:text-white"}`}
+        className={`${btn} ${isFav ? "bg-primary text-black" : "bg-black/50 text-white/90 hover:text-white"}`}
       >
         {isFav ? "♥" : "♡"}
       </button>

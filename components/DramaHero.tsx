@@ -169,7 +169,7 @@ export default function DramaHero({
                   onClick={() => onNavigate(ep)}
                   className={`rounded-lg border py-2.5 text-sm font-bold transition ${
                     ep === episode
-                      ? "border-primary bg-primary text-white"
+                      ? "border-primary bg-primary text-black"
                       : "border-border bg-surface text-text hover:border-primary"
                   }`}
                 >
@@ -219,7 +219,7 @@ export default function DramaHero({
               {episodeUrls.length > 0 ? (
                 <button
                   onClick={() => startWatching(resumeEp)}
-                  className="inline-block rounded-full bg-primary px-8 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="inline-block rounded-full bg-primary px-8 py-3 text-sm font-bold text-black shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   ▶ {hasProgress ? `Resume EP ${resumeEp}` : "Watch All Episodes"}
                 </button>
@@ -260,7 +260,7 @@ export default function DramaHero({
                     onClick={() => startWatching(ep)}
                     className={`rounded-lg border py-2.5 text-sm font-bold backdrop-blur transition ${
                       ep === resumeEp && hasProgress
-                        ? "border-primary bg-primary text-white"
+                        ? "border-primary bg-primary text-black"
                         : "border-white/20 bg-white/5 text-white hover:border-primary"
                     }`}
                   >

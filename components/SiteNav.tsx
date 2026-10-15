@@ -389,7 +389,7 @@ export default function SiteNav({ loggedIn }: { loggedIn: boolean }) {
           {loggedIn ? (
             <LogoutButton />
           ) : (
-            <Link href="/login" className="rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-white hover:bg-primaryhover">
+            <Link href="/login" className="rounded-full bg-primary px-4 py-1.5 text-xs font-bold text-black hover:bg-primaryhover">
               Login
             </Link>
           )}

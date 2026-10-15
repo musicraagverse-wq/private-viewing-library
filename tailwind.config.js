@@ -8,17 +8,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ShortDrama design tokens — cinematic dark theme, deep-blue undertones
-        bg: "#0B0D12",          // primary background
-        surface: "#161A22",     // secondary surface
-        card: "#222734",        // elevated surface
-        border: "#292B34",      // subtle borders
-        primary: "#8B5CF6",     // brand violet — primary actions only
-        primaryhover: "#A78BFA",// interactive hover violet
-        primarydark: "#5B4BD6", // deep violet (gradients, logo)
+        // Apple TV theme — monochrome minimalism: true black, white brand
+        // accent, Apple system grays. Red kept ONLY as danger token.
+        bg: "#000000",          // primary background — true black
+        surface: "#1C1C1E",     // secondary surface (Apple system gray 6)
+        card: "#2C2C2E",        // elevated surface (Apple system gray 5)
+        border: "#38383A",      // subtle borders (Apple system gray 4)
+        primary: "#FFFFFF",     // brand white — primary actions only
+        primaryhover: "#E8E8ED",// interactive hover — dimmed white
+        primarydark: "#A1A1A6", // deep gray (gradients, logo)
         danger: "#E42535",      // destructive / error red — never brand
-        text: "#F7F8FA",        // primary text
-        muted: "#A5ACBB",       // secondary text
+        text: "#F5F5F7",        // primary text (Apple near-white)
+        muted: "#86868B",       // secondary text (Apple secondary gray)
         gold: "#f5c518",
         info: "#5699FF",        // informational blue — sparing use
       },

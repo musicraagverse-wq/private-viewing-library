@@ -29,7 +29,7 @@ export default function RatingButtons({ dramaId, title }: { dramaId: string; tit
         title="I like this"
         className={`flex h-10 w-10 items-center justify-center rounded-full border text-lg transition ${
           rating === 1
-            ? "border-primary bg-primary text-white"
+            ? "border-primary bg-primary text-black"
             : "border-white/25 bg-white/5 text-white/70 hover:border-primary hover:text-white"
         }`}
       >

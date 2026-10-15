@@ -77,7 +77,7 @@ export default async function ExplorePage() {
                 {logo ? (
                   <img src={logo} alt="" className="h-4 w-4 rounded-sm" loading="lazy" />
                 ) : (
-                  <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-white">
+                  <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-black">
                     {platformInitial(p.platform)}
                   </span>
                 )}

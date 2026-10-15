@@ -36,7 +36,7 @@ export default function TasteQuiz({ tropes }: { tropes: { trope: string; c: numb
           </div>
           <button
             onClick={() => setOpen(true)}
-            className="shrink-0 rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+            className="shrink-0 rounded-full bg-primary px-7 py-3 text-sm font-bold text-black shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
           >
             Pick my tropes
           </button>
@@ -67,7 +67,7 @@ export default function TasteQuiz({ tropes }: { tropes: { trope: string; c: numb
               aria-pressed={active}
               className={`flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-semibold transition ${
                 active
-                  ? "border-primary bg-primary text-white"
+                  ? "border-primary bg-primary text-black"
                   : "border-border bg-bg text-text hover:border-primary"
               }`}
             >
@@ -84,7 +84,7 @@ export default function TasteQuiz({ tropes }: { tropes: { trope: string; c: numb
             setOpen(false);
           }}
           disabled={picked.length < 3}
-          className="rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:bg-primaryhover disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-full bg-primary px-7 py-3 text-sm font-bold text-black shadow-lg shadow-primary/30 transition hover:bg-primaryhover disabled:cursor-not-allowed disabled:opacity-40"
         >
           Done — personalize my home
         </button>

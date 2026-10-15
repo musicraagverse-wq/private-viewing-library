@@ -66,7 +66,7 @@ export default function DramaCard({ drama, fixedWidth }: { drama: DramaRow; fixe
         />
         <SaveButtons dramaId={drama.id} />
         {drama.has_videos ? (
-          <div className="absolute left-2 top-2 rounded bg-primary px-2 py-0.5 text-[10px] font-bold text-white">
+          <div className="absolute left-2 top-2 rounded bg-primary px-2 py-0.5 text-[10px] font-bold text-black">
             ▶ Free
           </div>
         ) : hasDm ? (

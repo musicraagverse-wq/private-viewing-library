@@ -68,7 +68,7 @@ export default function Hero({ drama }: { drama: DramaRow }) {
                 <PlatformMark platform={drama.platform} className="h-4 w-4" />
               </span>
             ) : null}
-            <span className="rounded bg-primary px-2 py-0.5 text-xs font-bold text-white">▶ Free</span>
+            <span className="rounded bg-primary px-2 py-0.5 text-xs font-bold text-black">▶ Free</span>
           </div>
 
           {drama.synopsis && (
@@ -94,7 +94,7 @@ export default function Hero({ drama }: { drama: DramaRow }) {
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
               href={`/drama/${encodeURIComponent(drama.id)}`}
-              className="rounded-full bg-primary px-7 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="rounded-full bg-primary px-7 py-3 text-sm font-bold text-black shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               ▶ Watch Now
             </Link>

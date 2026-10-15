@@ -69,7 +69,7 @@ export default function ContinueWatching({ items }: { items: ContinueItem[] }) {
               disabled={removing === d.id}
               aria-label={`Remove ${d.title} from Continue Watching`}
               title="Remove from Continue Watching"
-              className="absolute right-1 top-1 z-10 rounded-full bg-black/70 px-2 py-1 text-xs font-extrabold text-primary backdrop-blur transition hover:bg-primary hover:text-white disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
+              className="absolute right-1 top-1 z-10 rounded-full bg-black/70 px-2 py-1 text-xs font-extrabold text-primary backdrop-blur transition hover:bg-primary hover:text-black disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
             >
               ✕
             </button>

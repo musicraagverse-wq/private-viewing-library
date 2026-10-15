@@ -82,7 +82,7 @@ export default async function BrowsePage({
           <p className="mx-auto mt-2 max-w-md text-sm text-muted">
             Try removing a filter or two — especially the rating and trope filters, which narrow things fast.
           </p>
-          <Link href="/browse" className="mt-4 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold text-white hover:bg-primaryhover">
+          <Link href="/browse" className="mt-4 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold text-black hover:bg-primaryhover">
             Clear all filters
           </Link>
         </div>

@@ -27,7 +27,7 @@ function EpisodeGrid({
           onClick={() => onNavigate(ep)}
           className={`rounded-lg py-2.5 text-sm font-bold transition ${
             ep === episode
-              ? "bg-primary text-white"
+              ? "bg-primary text-black"
               : "bg-surface text-text hover:border-primary"
           } border border-border`}
         >
@@ -121,7 +121,7 @@ export default function WatchClient({
         href={`https://www.dailymotion.com/video/${dailymotionEmbed.split("/").pop()}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-6 inline-block rounded-lg bg-primary px-8 py-3 text-sm font-extrabold text-white hover:bg-primaryhover"
+        className="mt-6 inline-block rounded-lg bg-primary px-8 py-3 text-sm font-extrabold text-black hover:bg-primaryhover"
       >
         ▶ Watch on Dailymotion
       </a>

@@ -57,7 +57,7 @@ export default async function ArtistsPage({
   const chipCls = (active: boolean) =>
     `rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
       active
-        ? "bg-primary text-white"
+        ? "bg-primary text-black"
         : "border border-border bg-surface text-muted hover:text-text"
     }`;
 
@@ -81,7 +81,7 @@ export default async function ArtistsPage({
           />
           <button
             type="submit"
-            className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90"
+            className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-black transition hover:opacity-90"
           >
             Search
           </button>

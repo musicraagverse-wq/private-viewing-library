@@ -192,7 +192,7 @@ export default async function DramaDetail({ params }: { params: { id: string } }
           {urls.length > 0 && (
             <div className="flex items-center justify-between border-t border-border py-2">
               <span className="text-sm font-semibold">Status</span>
-              <span className="rounded bg-primary px-2 py-0.5 text-xs font-bold text-white">▶ Free</span>
+              <span className="rounded bg-primary px-2 py-0.5 text-xs font-bold text-black">▶ Free</span>
             </div>
           )}
         </div>

@@ -15,7 +15,7 @@ export default function PlatformMark({
         <img src={logo} alt="" className={`${className} rounded-sm`} loading="lazy" />
       ) : (
         <span
-          className={`flex ${className} items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-white`}
+          className={`flex ${className} items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-black`}
         >
           {platformInitial(platform)}
         </span>

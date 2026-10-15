@@ -35,7 +35,7 @@ export default async function NewArrivalsPage({
             href={hrefWith(t, 1)}
             className={`rounded-full border px-4 py-2 text-sm font-semibold capitalize ${
               t === tab
-                ? "border-primary bg-primary text-white"
+                ? "border-primary bg-primary text-black"
                 : "border-border bg-surface text-text hover:border-primary hover:text-primary"
             }`}
           >

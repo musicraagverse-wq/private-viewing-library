@@ -174,7 +174,7 @@ export default async function Home({
             <Rail title="Top Rated" href="/top-imdb">
               {topImdb.slice(0, 12).map((d, i) => (
                 <div key={d.id} className="relative w-36 shrink-0 sm:w-40">
-                  <span className="absolute left-2 top-2 z-10 rounded-md bg-primary px-2 py-0.5 text-sm font-extrabold text-white" aria-label={`Rank ${i + 1}`}>
+                  <span className="absolute left-2 top-2 z-10 rounded-md bg-primary px-2 py-0.5 text-sm font-extrabold text-black" aria-label={`Rank ${i + 1}`}>
                     {i + 1}
                   </span>
                   <DramaCard drama={d} fixedWidth />
@@ -256,7 +256,7 @@ export default async function Home({
                     {logo ? (
                       <img src={logo} alt="" className="h-4 w-4 rounded-sm" loading="lazy" />
                     ) : (
-                      <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-white" aria-hidden="true">
+                      <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-black" aria-hidden="true">
                         {platformInitial(p.platform)}
                       </span>
                     )}
@@ -300,7 +300,7 @@ export default async function Home({
                     ? `Nothing matches "${q}". Try a different title, an actor's name, or browse by trope or genre instead.`
                     : "Try clearing the filters or browsing a different platform."}
                 </p>
-                <Link href="/" className="mt-4 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold text-white hover:bg-primaryhover">
+                <Link href="/" className="mt-4 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold text-black hover:bg-primaryhover">
                   Browse all dramas
                 </Link>
               </div>

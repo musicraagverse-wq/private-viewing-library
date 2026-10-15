@@ -65,7 +65,7 @@ export default function FilterPanel({ options }: { options: FilterOptions }) {
       <details className="lg:hidden" open={chips.length > 0}>
         <summary className="cursor-pointer list-none text-sm font-bold text-text">
           <span className="flex items-center justify-between">
-            Filters {chips.length > 0 && <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-white">{chips.length}</span>}
+            Filters {chips.length > 0 && <span className="rounded-full bg-primary px-2 py-0.5 text-xs text-black">{chips.length}</span>}
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4" aria-hidden="true">
               <path d="M4 6h16M7 12h10M10 18h4" strokeLinecap="round" />
             </svg>
