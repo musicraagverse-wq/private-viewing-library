@@ -1,8 +1,11 @@
 import Link from "next/link";
-import { browseDramas, countDramas, getPlatforms, getContinueWatching, getStats, getFreshArrivals, getGenres, getTropes, getTopImdb, pingDb } from "@/lib/db";
-import DramaCard, { Poster } from "@/components/DramaCard";
+import { browseDramas, countDramas, getPlatforms, getContinueWatching, getGenres, getTropes, getTopImdb, getFeaturedDrama, getTrending, getFreshArrivals, pingDb, COLLECTIONS } from "@/lib/db";
+import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import ContinueWatching from "@/components/ContinueWatching";
+import SortSelect from "@/components/SortSelect";
+import Hero from "@/components/Hero";
+import Rail from "@/components/Rail";
 import { platformLogo, platformInitial, formatPlatform, sortPlatforms } from "@/lib/platforms";
 import { genreIcon, tropeIcon } from "@/lib/tag-icons";
 
@@ -13,21 +16,6 @@ const PER_PAGE = 24;
 /** 4-hour rotation slot — homepage picks reshuffle every 4 hours. */
 function rotationSlot() {
   return Math.floor(Date.now() / (4 * 3600 * 1000));
-}
-
-/** Deterministic shuffle seeded by the rotation slot (mulberry32). */
-function rotatingPick<T>(items: T[], count: number): T[] {
-  if (items.length <= count) return items;
-  let seed = rotationSlot();
-  const arr = [...items];
-  for (let i = arr.length - 1; i > 0; i--) {
-    seed |= 0; seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    const j = ((t ^ (t >>> 14)) >>> 0) % (i + 1);
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr.slice(0, count);
 }
 
 function href(params: Record<string, string | undefined>, overrides: Record<string, string | undefined> = {}) {
@@ -43,74 +31,53 @@ function href(params: Record<string, string | undefined>, overrides: Record<stri
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { q?: string; platform?: string; page?: string; videos?: string };
+  searchParams: { q?: string; platform?: string; page?: string; videos?: string; sort?: string };
 }) {
   const q = (searchParams.q ?? "").trim();
   const platform = searchParams.platform ?? "";
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
   const onlyWithVideos = searchParams.videos === "1";
+  const sort = searchParams.sort === "rating" ? "rating" : "newest";
 
   let dramas: Awaited<ReturnType<typeof browseDramas>> = [];
   let total = 0;
   let platforms: Awaited<ReturnType<typeof getPlatforms>> = [];
-  let stats = { total: 0, withVideos: 0, withAlt: 0 };
   let continueWatching: Awaited<ReturnType<typeof getContinueWatching>> = [];
-  let trending: Awaited<ReturnType<typeof browseDramas>> = [];
+  let trending: Awaited<ReturnType<typeof getTrending>> = [];
   let freshArrivals: Awaited<ReturnType<typeof getFreshArrivals>> = [];
   let topImdb: Awaited<ReturnType<typeof getTopImdb>> = [];
   let genres: Awaited<ReturnType<typeof getGenres>> = [];
   let tropes: Awaited<ReturnType<typeof getTropes>> = [];
+  let featured: Awaited<ReturnType<typeof getFeaturedDrama>> = null;
   let dbError = false;
 
   try {
     await pingDb();
-    [dramas, total, platforms, stats, freshArrivals, genres, tropes, topImdb] = await Promise.all([
-      browseDramas({ q, source: "", platform, page, perPage: PER_PAGE, onlyWithVideos }),
+    [dramas, total, platforms, freshArrivals, genres, tropes, topImdb] = await Promise.all([
+      browseDramas({ q, source: "", platform, page, perPage: PER_PAGE, onlyWithVideos, sort }),
       countDramas(q, "", platform),
       getPlatforms(),
-      getStats(),
       getFreshArrivals(12),
       getGenres(),
       getTropes(),
       getTopImdb(50),
     ]);
-    // "Watch Free Now": rotate through watchable dramas every 4 hours
-    const watchable = await browseDramas({ q: "", source: "", platform: "", page: 1, perPage: 60, onlyWithVideos: true });
-    trending = rotatingPick(watchable, 12);
     if (!q && !platform && page === 1) {
-      continueWatching = await getContinueWatching(10);
+      [continueWatching, trending, featured] = await Promise.all([
+        getContinueWatching(10),
+        getTrending(12),
+        getFeaturedDrama(rotationSlot()),
+      ]);
     }
   } catch {
     dbError = true;
   }
 
-  const base = { q: q || undefined, platform: platform || undefined, videos: onlyWithVideos ? "1" : undefined };
+  const base = { q: q || undefined, platform: platform || undefined, videos: onlyWithVideos ? "1" : undefined, sort: sort === "rating" ? "rating" : undefined };
   const isHome = !q && !platform && page === 1;
 
   return (
     <div className="space-y-10">
-      {/* Hero */}
-      <section className="py-8 text-center">
-        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
-          Discover Your Next <span className="text-primary">Short Drama</span> Obsession
-        </h1>
-        <p className="mx-auto mt-3 max-w-2xl text-muted">
-          Explore trending mini series, full episode guides, and streaming platforms all in one place.
-        </p>
-        <form action="/" method="get" className="mx-auto mt-6 flex max-w-xl gap-2">
-          <input
-            type="search"
-            name="q"
-            defaultValue={q}
-            placeholder="Search dramas..."
-            className="w-full rounded-lg border border-border bg-surface px-4 py-3 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none"
-          />
-          <button type="submit" className="rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primarydark">
-            Search
-          </button>
-        </form>
-      </section>
-
       {dbError && (
         <div className="rounded-lg border border-border bg-surface p-6 text-center text-sm text-primary">
           Busy right now — please refresh in a moment.
@@ -119,69 +86,73 @@ export default async function Home({
 
       {isHome ? (
         <>
+          {/* Cinematic hero */}
+          {featured && <Hero drama={featured} />}
+
           {/* Continue Watching */}
           {continueWatching.length > 0 && <ContinueWatching items={continueWatching} />}
 
-          {/* Watch Free Now */}
-          <section>
+          {/* Trending — most-saved (real signal) */}
+          {trending.length > 0 && (
+            <Rail title="Trending Now" href="/explore">
+              {trending.map((d) => (
+                <DramaCard key={d.id} drama={d} fixedWidth />
+              ))}
+            </Rail>
+          )}
+
+          {/* Curated collections — editorial */}
+          <section aria-label="Curated collections">
             <div className="mb-4 flex items-baseline justify-between">
-              <h2 className="text-2xl font-bold">Watch Free Now</h2>
-              <Link href="/?videos=1" className="text-sm font-semibold text-primary hover:underline">
+              <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Curated Collections</h2>
+              <Link href="/explore" className="shrink-0 text-sm font-semibold text-primary hover:underline">
                 View all →
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-              {trending.map((d) => (
-                <DramaCard key={d.id} drama={d} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {COLLECTIONS.map((c) => (
+                <Link
+                  key={c.slug}
+                  href={`/collection/${c.slug}`}
+                  className="card-hover group overflow-hidden rounded-2xl border border-border bg-surface p-5"
+                >
+                  <div className="text-3xl" aria-hidden="true">{c.icon}</div>
+                  <h3 className="mt-3 text-lg font-bold text-text group-hover:text-primary">{c.title}</h3>
+                  <p className="mt-1 text-sm leading-relaxed text-muted">{c.description}</p>
+                  <span className="mt-3 inline-block text-sm font-semibold text-primary">
+                    Explore →
+                  </span>
+                </Link>
               ))}
             </div>
           </section>
 
-          {/* Top IMDb — rotates every 4 hours */}
+          {/* Top rated */}
           {topImdb.length > 0 && (
-            <section>
-              <div className="mb-4 flex items-baseline justify-between">
-                <h2 className="text-2xl font-bold">Top IMDb Rated</h2>
-                <Link href="/top-imdb" className="text-sm font-semibold text-primary hover:underline">
-                  View all →
-                </Link>
-              </div>
-              <div className="no-scrollbar flex gap-4 overflow-x-auto pb-2">
-                {rotatingPick(topImdb, 10).map((d, i) => (
-                  <Link
-                    key={d.id}
-                    href={`/drama/${encodeURIComponent(d.id)}`}
-                    className="card-hover w-36 shrink-0 overflow-hidden rounded-xl border border-border bg-surface"
-                  >
-                    <div className="relative aspect-[3/4]">
-                      <span className="absolute left-2 top-2 z-10 rounded-md bg-primary px-2 py-0.5 text-sm font-extrabold text-white">
-                        {i + 1}
-                      </span>
-                      <Poster title={d.title} posterUrl={d.poster_url} />
-                    </div>
-                    <div className="p-2">
-                      <p className="truncate text-sm font-semibold">{d.title}</p>
-                      <p className="text-xs text-muted">★ {d.imdb_rating?.toFixed(1)}</p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
+            <Rail title="Top Rated" href="/top-imdb">
+              {topImdb.slice(0, 12).map((d, i) => (
+                <div key={d.id} className="relative w-36 shrink-0 sm:w-40">
+                  <span className="absolute left-2 top-2 z-10 rounded-md bg-primary px-2 py-0.5 text-sm font-extrabold text-white" aria-label={`Rank ${i + 1}`}>
+                    {i + 1}
+                  </span>
+                  <DramaCard drama={d} fixedWidth />
+                </div>
+              ))}
+            </Rail>
           )}
 
-          {/* Recently Added */}
-          <section>
-            <h2 className="mb-4 text-2xl font-bold">Recently Added</h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+          {/* New arrivals */}
+          {freshArrivals.length > 0 && (
+            <Rail title="New Arrivals" href="/new">
               {freshArrivals.map((d) => (
-                <DramaCard key={d.id} drama={d} />
+                <DramaCard key={d.id} drama={d} fixedWidth />
               ))}
-            </div>
-          </section>
+            </Rail>
+          )}
 
-          {/* Popular Tropes */}
-          <section>
-            <h2 className="mb-4 text-2xl font-bold">Popular Tropes & Themes</h2>
+          {/* Browse by Trope */}
+          <section aria-label="Browse by trope">
+            <h2 className="mb-4 text-xl font-bold tracking-tight sm:text-2xl">Browse by Trope</h2>
             <div className="flex flex-wrap gap-2">
               {tropes.slice(0, 20).map((t) => {
                 const icon = tropeIcon(t.trope);
@@ -191,7 +162,7 @@ export default async function Home({
                     href={`/trope/${encodeURIComponent(t.trope)}`}
                     className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-primary hover:text-primary"
                   >
-                    {icon && <span>{icon}</span>}
+                    {icon && <span aria-hidden="true">{icon}</span>}
                     {t.trope} <span className="text-muted">({t.c.toLocaleString()})</span>
                   </Link>
                 );
@@ -200,8 +171,8 @@ export default async function Home({
           </section>
 
           {/* Browse by Genre */}
-          <section>
-            <h2 className="mb-4 text-2xl font-bold">Browse by Genre</h2>
+          <section aria-label="Browse by genre">
+            <h2 className="mb-4 text-xl font-bold tracking-tight sm:text-2xl">Browse by Genre</h2>
             <div className="flex flex-wrap gap-2">
               {genres.slice(0, 20).map((g) => {
                 const icon = genreIcon(g.genre);
@@ -211,7 +182,7 @@ export default async function Home({
                     href={`/genre/${encodeURIComponent(g.genre)}`}
                     className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold hover:border-primary hover:text-primary"
                   >
-                    {icon && <span>{icon}</span>}
+                    {icon && <span aria-hidden="true">{icon}</span>}
                     {g.genre} <span className="text-muted">({g.c.toLocaleString()})</span>
                   </Link>
                 );
@@ -220,8 +191,8 @@ export default async function Home({
           </section>
 
           {/* Browse by Platform */}
-          <section>
-            <h2 className="mb-4 text-2xl font-bold">Browse by Platform</h2>
+          <section aria-label="Browse by platform">
+            <h2 className="mb-4 text-xl font-bold tracking-tight sm:text-2xl">Browse by Platform</h2>
             <div className="flex flex-wrap gap-2">
               {sortPlatforms(platforms).slice(0, 20).map((p) => {
                 const logo = platformLogo(p.platform);
@@ -234,7 +205,7 @@ export default async function Home({
                     {logo ? (
                       <img src={logo} alt="" className="h-4 w-4 rounded-sm" loading="lazy" />
                     ) : (
-                      <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-white">
+                      <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-primary text-[10px] font-bold text-white" aria-hidden="true">
                         {platformInitial(p.platform)}
                       </span>
                     )}
@@ -248,18 +219,21 @@ export default async function Home({
       ) : (
         <>
           {/* Search/Browse results */}
-          <section>
+          <section aria-label="Search results">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-2xl font-bold">
-                {q ? `Results for "${q}"` : platform ? `${platform}` : "All Dramas"}
+                {q ? `Results for "${q}"` : platform ? formatPlatform(platform) : "All Dramas"}
                 <span className="ml-2 text-sm font-normal text-muted">({total.toLocaleString()})</span>
               </h2>
-              <Link
-                href={href(base, { videos: onlyWithVideos ? undefined : "1", page: undefined })}
-                className={`rounded-full border px-4 py-1.5 text-xs font-bold ${onlyWithVideos ? "border-primary bg-primary/10 text-primary" : "border-border text-muted hover:text-primary"}`}
-              >
-                ▶ Watchable only
-              </Link>
+              <div className="flex items-center gap-2">
+                <SortSelect value={sort} />
+                <Link
+                  href={href(base, { videos: onlyWithVideos ? undefined : "1", page: undefined })}
+                  className={`rounded-full border px-4 py-1.5 text-xs font-bold ${onlyWithVideos ? "border-primary bg-primary/10 text-primary" : "border-border text-muted hover:text-primary"}`}
+                >
+                  ▶ Watchable only
+                </Link>
+              </div>
             </div>
             {platform && (
               <div className="mb-4">
@@ -267,8 +241,16 @@ export default async function Home({
               </div>
             )}
             {dramas.length === 0 && !dbError ? (
-              <div className="rounded-lg border border-border bg-surface p-10 text-center text-sm text-muted">
-                No dramas found.
+              <div className="rounded-lg border border-border bg-surface p-10 text-center">
+                <p className="text-base font-semibold text-text">No dramas found</p>
+                <p className="mx-auto mt-2 max-w-md text-sm text-muted">
+                  {q
+                    ? `Nothing matches "${q}". Try a different title, an actor's name, or browse by trope or genre instead.`
+                    : "Try clearing the filters or browsing a different platform."}
+                </p>
+                <Link href="/" className="mt-4 inline-block rounded-full bg-primary px-6 py-2 text-sm font-bold text-white hover:bg-primarydark">
+                  Browse all dramas
+                </Link>
               </div>
             ) : (
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">

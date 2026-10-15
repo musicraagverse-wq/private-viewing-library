@@ -9,6 +9,8 @@ type ContinueItem = {
   title: string;
   poster_url: string | null;
   episode: number;
+  position_seconds: number;
+  duration_seconds: number | null;
 };
 
 export default function ContinueWatching({ items }: { items: ContinueItem[] }) {
@@ -33,10 +35,15 @@ export default function ContinueWatching({ items }: { items: ContinueItem[] }) {
   if (list.length === 0) return null;
 
   return (
-    <section>
-      <h2 className="mb-3 text-2xl font-extrabold">📺 Continue Watching</h2>
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
-        {list.map((d) => (
+    <section aria-label="Continue watching">
+      <h2 className="mb-3 text-xl font-bold tracking-tight sm:text-2xl">Continue Watching</h2>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+        {list.map((d) => {
+          const pct =
+            d.duration_seconds && d.duration_seconds > 0
+              ? Math.min(100, Math.max(0, (d.position_seconds / d.duration_seconds) * 100))
+              : null;
+          return (
           <div key={d.id} className="rounded-lg bg-card card-hover group relative">
             <Link href={`/watch/${encodeURIComponent(d.id)}/${d.episode}`}>
               <div className="relative aspect-[3/4]">
@@ -44,6 +51,11 @@ export default function ContinueWatching({ items }: { items: ContinueItem[] }) {
                 <div className="absolute inset-x-0 bottom-0 bg-black/70 px-2 py-1 text-center text-[11px] font-extrabold text-gold">
                   EP {d.episode}
                 </div>
+                {pct !== null && (
+                  <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20" role="progressbar" aria-valuenow={Math.round(pct)} aria-valuemin={0} aria-valuemax={100} aria-label={`${d.title} progress`}>
+                    <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                  </div>
+                )}
               </div>
               <div className="line-clamp-1 p-2 text-xs font-extrabold text-text group-hover:text-primary">
                 {d.title}
@@ -55,13 +67,15 @@ export default function ContinueWatching({ items }: { items: ContinueItem[] }) {
                 remove(d.id);
               }}
               disabled={removing === d.id}
+              aria-label={`Remove ${d.title} from Continue Watching`}
               title="Remove from Continue Watching"
-              className="absolute right-1 top-1 z-10 rounded-full bg-black/70 px-2 py-1 text-xs font-extrabold text-primary opacity-0 backdrop-blur transition-opacity group-hover:opacity-100 hover:bg-primary hover:text-white disabled:opacity-50"
+              className="absolute right-1 top-1 z-10 rounded-full bg-black/70 px-2 py-1 text-xs font-extrabold text-primary backdrop-blur transition hover:bg-primary hover:text-white disabled:opacity-50 md:opacity-0 md:group-hover:opacity-100 md:focus-visible:opacity-100"
             >
               ✕
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

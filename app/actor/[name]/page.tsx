@@ -33,7 +33,7 @@ export default async function ArtistPage({
   return (
     <div className="space-y-6">
       <div>
-        <Link href="/artists" className="text-sm text-muted hover:text-primary">
+        <Link href="/actors" className="text-sm text-muted hover:text-primary">
           ← Artists
         </Link>
         <div className="mt-3 flex items-center gap-4">
@@ -65,7 +65,7 @@ export default async function ArtistPage({
         page={page}
         total={total}
         perPage={PER_PAGE}
-        buildHref={(p) => `/artist/${encodeURIComponent(actor)}${p === 1 ? "" : `?page=${p}`}`}
+        buildHref={(p) => `/actor/${encodeURIComponent(actor)}${p === 1 ? "" : `?page=${p}`}`}
       />
     </div>
   );

@@ -17,11 +17,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { drama_id, episode, position_seconds } = body;
+    const { drama_id, episode, position_seconds, duration_seconds } = body;
     if (!drama_id || typeof episode !== "number") {
       return NextResponse.json({ error: "drama_id and episode required" }, { status: 400 });
     }
-    await saveProgress(String(drama_id), Math.max(1, Math.floor(episode)), Math.max(0, Math.floor(position_seconds ?? 0)));
+    await saveProgress(
+      String(drama_id),
+      Math.max(1, Math.floor(episode)),
+      Math.max(0, Math.floor(position_seconds ?? 0)),
+      typeof duration_seconds === "number" && duration_seconds > 0 ? Math.floor(duration_seconds) : undefined
+    );
     return NextResponse.json({ ok: true });
   } catch (e) {
     return NextResponse.json({ error: "db unavailable" }, { status: 503 });

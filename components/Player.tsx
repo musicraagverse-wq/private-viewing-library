@@ -65,10 +65,15 @@ export default function Player({
       fetch("/api/progress", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ drama_id: dramaId, episode, position_seconds: Math.floor(pos) }),
+        body: JSON.stringify({
+          drama_id: dramaId,
+          episode,
+          position_seconds: Math.floor(pos),
+          duration_seconds: duration > 0 ? Math.floor(duration) : undefined,
+        }),
       }).catch(() => {});
     },
-    [dramaId, episode]
+    [dramaId, episode, duration]
   );
 
   const pokeControls = useCallback(() => {

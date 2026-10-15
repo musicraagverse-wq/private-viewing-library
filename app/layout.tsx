@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { cookies } from "next/headers";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import LogoutButton from "@/components/LogoutButton";
+import SiteNav from "@/components/SiteNav";
 import { SavedListsProvider } from "@/components/SavedLists";
+import { COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -17,32 +18,14 @@ export const metadata: Metadata = {
   icons: { icon: "/logo.svg" },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const token = cookies().get(COOKIE_NAME)?.value;
+  const loggedIn = await verifySessionToken(token, process.env.LIBRARY_PASSWORD);
+
   return (
     <html lang="en" className={inter.variable}>
       <body>
-        <header className="sticky top-0 z-40 border-b border-border bg-bg/95 backdrop-blur">
-          <div className="mx-auto flex max-w-7xl items-center gap-8 px-4 py-4 sm:px-6">
-            <Link href="/" className="flex items-center gap-2 text-2xl font-extrabold tracking-tight">
-              <img src="/logo.svg" alt="Short Drama logo" className="h-8 w-8 rounded-lg" />
-              <span><span className="text-primary">Short</span><span className="text-text">Drama</span></span>
-            </Link>
-            <nav className="flex items-center gap-6 text-sm font-semibold text-muted">
-              <Link href="/" className="hover:text-text">Home</Link>
-              <Link href="/explore#genres" className="hover:text-text">Genres</Link>
-              <Link href="/explore#platforms" className="hover:text-text">Platforms</Link>
-              <Link href="/explore#tropes" className="hover:text-text">Tropes</Link>
-              <Link href="/artists" className="hover:text-text">Artists</Link>
-              <Link href="/top-imdb" className="hover:text-text">Top IMDb</Link>
-              <Link href="/new" className="hover:text-text">New</Link>
-              <Link href="/favourites" className="hover:text-text">♥ Favourites</Link>
-              <Link href="/watch-later" className="hover:text-text">🔖 Watch Later</Link>
-            </nav>
-            <div className="ml-auto">
-              <LogoutButton />
-            </div>
-          </div>
-        </header>
+        <SiteNav loggedIn={loggedIn} />
         <main className="mx-auto max-w-7xl px-4 pb-16 pt-6 sm:px-6">
           <SavedListsProvider>{children}</SavedListsProvider>
         </main>

@@ -11,6 +11,7 @@ export type DramaRow = {
   platform: string | null;
   has_videos: number;
   alt_source: string | null;
+  imdb_rating?: number | null;
 };
 
 function gradientFor(title: string): string {
@@ -50,12 +51,12 @@ export function dailymotionId(alt: string | null): string | null {
   return m ? m[1] : null;
 }
 
-export default function DramaCard({ drama }: { drama: DramaRow }) {
+export default function DramaCard({ drama, fixedWidth }: { drama: DramaRow; fixedWidth?: boolean }) {
   const hasDm = !!dailymotionId(drama.alt_source);
   return (
     <Link
       href={`/drama/${encodeURIComponent(drama.id)}`}
-      className="card-hover group overflow-hidden rounded-lg bg-card"
+      className={`card-hover group overflow-hidden rounded-lg bg-card ${fixedWidth ? "w-36 shrink-0 sm:w-40" : ""}`}
     >
       <div className="relative aspect-[3/4] w-full overflow-hidden">
         <Poster
@@ -73,6 +74,11 @@ export default function DramaCard({ drama }: { drama: DramaRow }) {
             Dailymotion
           </div>
         ) : null}
+        {drama.imdb_rating != null && (
+          <div className="absolute bottom-2 right-2 rounded bg-black/70 px-1.5 py-0.5 text-[11px] font-bold text-gold backdrop-blur">
+            ★ {drama.imdb_rating.toFixed(1)}
+          </div>
+        )}
       </div>
       <div className="p-3">
         <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-text group-hover:text-primary">

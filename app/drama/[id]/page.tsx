@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { getDrama, getDuplicatesOf, getProgress, pingDb, browseByGenre, getPlatforms } from "@/lib/db";
+import { getDrama, getProgress, pingDb, getRelatedDramas } from "@/lib/db";
 import { parseEpisodeUrls, dailymotionId } from "@/lib/types";
 import DramaCard from "@/components/DramaCard";
 import DramaHero from "@/components/DramaHero";
 import PlatformMark from "@/components/PlatformMark";
+import Rail from "@/components/Rail";
 
 export const dynamic = "force-dynamic";
 
@@ -39,25 +40,27 @@ export default async function DramaDetail({ params }: { params: { id: string } }
     if (drama.cast_data) cast = JSON.parse(drama.cast_data);
   } catch {}
 
-  // Related: same platform
-  let moreFromPlatform: any[] = [];
-  let popular: any[] = [];
-  try {
-    if (drama.platform) {
-      const { browseDramas } = await import("@/lib/db");
-      moreFromPlatform = (await browseDramas({ q: "", source: "", platform: drama.platform, page: 1, perPage: 12, onlyWithVideos: false }))
-        .filter((d: any) => d.id !== drama.id).slice(0, 6);
-    }
-    // Popular: get some with videos
-    const { browseDramas } = await import("@/lib/db");
-    popular = (await browseDramas({ q: "", source: "", platform: "", page: 1, perPage: 12, onlyWithVideos: true }))
-      .filter((d: any) => d.id !== drama.id).slice(0, 6);
-  } catch {}
-
-  // Genres list
+  // Genres + tropes
   let genreList: string[] = [];
   try {
     if (drama.genres) genreList = JSON.parse(drama.genres);
+  } catch {}
+  let tropeList: string[] = [];
+  try {
+    if ((drama as any).tropes) tropeList = JSON.parse((drama as any).tropes);
+  } catch {}
+
+  // More Like This: shared genres, tropes, cast
+  let related: any[] = [];
+  try {
+    const { getRelatedDramas } = await import("@/lib/db");
+    related = await getRelatedDramas(
+      drama.id,
+      genreList,
+      tropeList,
+      cast.map((c) => c.actor).filter(Boolean),
+      12
+    );
   } catch {}
 
   return (
@@ -76,7 +79,7 @@ export default async function DramaDetail({ params }: { params: { id: string } }
         hasProgress={!!progress}
         resumeSeconds={progress && progress.episode === resumeEp ? progress.position_seconds : 0}
         dailymotionId={dm}
-        upNext={moreFromPlatform.map((d: any) => ({ id: d.id, title: d.title, poster_url: d.poster_url }))}
+        upNext={related.slice(0, 6).map((d: any) => ({ id: d.id, title: d.title, poster_url: d.poster_url }))}
       />
 
       {/* Synopsis */}
@@ -89,14 +92,18 @@ export default async function DramaDetail({ params }: { params: { id: string } }
 
       {/* Cast */}
       {cast.length > 0 && (
-        <section>
+        <section aria-label="Cast">
           <h2 className="mb-3 text-xl font-bold">Cast</h2>
           <div className="flex flex-wrap gap-2">
             {cast.map((c, i) => (
-              <span key={i} className="rounded-full border border-border bg-surface px-4 py-2 text-sm">
+              <Link
+                key={i}
+                href={`/actor/${encodeURIComponent(c.actor)}`}
+                className="rounded-full border border-border bg-surface px-4 py-2 text-sm transition-colors hover:border-primary hover:text-primary"
+              >
                 <span className="font-semibold">{c.actor}</span>
                 {c.character && <span className="text-muted"> as {c.character}</span>}
-              </span>
+              </Link>
             ))}
           </div>
           {drama.imdb_id && (
@@ -114,7 +121,7 @@ export default async function DramaDetail({ params }: { params: { id: string } }
 
       {/* Genres */}
       {genreList.length > 0 && (
-        <section>
+        <section aria-label="Genres">
           <h2 className="mb-3 text-xl font-bold">Genres</h2>
           <div className="flex flex-wrap gap-2">
             {genreList.map((g) => (
@@ -124,6 +131,24 @@ export default async function DramaDetail({ params }: { params: { id: string } }
                 className="rounded-full border border-border bg-surface px-4 py-1.5 text-sm hover:border-primary hover:text-primary"
               >
                 {g}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Tropes */}
+      {tropeList.length > 0 && (
+        <section aria-label="Tropes">
+          <h2 className="mb-3 text-xl font-bold">Tropes</h2>
+          <div className="flex flex-wrap gap-2">
+            {tropeList.map((t) => (
+              <Link
+                key={t}
+                href={`/trope/${encodeURIComponent(t)}`}
+                className="rounded-full border border-border bg-surface px-4 py-1.5 text-sm hover:border-primary hover:text-primary"
+              >
+                {t}
               </Link>
             ))}
           </div>
@@ -153,28 +178,13 @@ export default async function DramaDetail({ params }: { params: { id: string } }
         </div>
       </section>
 
-      {/* More from platform */}
-      {moreFromPlatform.length > 0 && (
-        <section>
-          <h2 className="mb-4 text-xl font-bold">More from {drama.platform}</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {moreFromPlatform.map((d: any) => (
-              <DramaCard key={d.id} drama={d} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Popular */}
-      {popular.length > 0 && (
-        <section>
-          <h2 className="mb-4 text-xl font-bold">Popular & New Short Dramas</h2>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {popular.map((d: any) => (
-              <DramaCard key={d.id} drama={d} />
-            ))}
-          </div>
-        </section>
+      {/* More Like This */}
+      {related.length > 0 && (
+        <Rail title="More Like This">
+          {related.map((d: any) => (
+            <DramaCard key={d.id} drama={d} fixedWidth />
+          ))}
+        </Rail>
       )}
     </div>
   );

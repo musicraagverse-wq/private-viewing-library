@@ -16,8 +16,10 @@ function buildWhere(
 ): string {
   const where: string[] = ["COALESCE(is_duplicate,0) = 0"];
   if (q) {
-    params.push(`%${q}%`, `%${q}%`);
-    where.push(`(title ILIKE $${params.length - 1} OR synopsis ILIKE $${params.length})`);
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+    where.push(
+      `(title ILIKE $${params.length - 2} OR synopsis ILIKE $${params.length - 1} OR cast_data ILIKE $${params.length})`
+    );
   }
   if (source) {
     params.push(source);
@@ -51,18 +53,20 @@ export interface BrowseOpts {
   page: number;
   perPage: number;
   onlyWithVideos: boolean;
+  sort?: "newest" | "rating";
 }
 
 export async function browseDramas(opts: BrowseOpts): Promise<DramaRow[]> {
-  const { q, source, platform, page, perPage, onlyWithVideos } = opts;
+  const { q, source, platform, page, perPage, onlyWithVideos, sort } = opts;
   const params: (string | number)[] = [];
   const where = buildWhere(q, source, platform, onlyWithVideos, params);
   const offset = (page - 1) * perPage;
   params.push(perPage, offset);
   const limitPh = params.length - 1;
   const offsetPh = params.length;
+  const orderBy = sort === "rating" ? "imdb_wr DESC NULLS LAST" : "scraped_at DESC";
   return (await sql.query(
-    `SELECT ${CARD_COLS} FROM dramas WHERE ${where} ORDER BY scraped_at DESC LIMIT $${limitPh} OFFSET $${offsetPh}`,
+    `SELECT ${CARD_COLS} FROM dramas WHERE ${where} ORDER BY ${orderBy} LIMIT $${limitPh} OFFSET $${offsetPh}`,
     params
   )) as DramaRow[];
 }
@@ -100,12 +104,12 @@ export async function getSources(): Promise<{ source: string; c: number }[]> {
 
 export async function getContinueWatching(
   limit = 8
-): Promise<(DramaRow & { episode: number; position_seconds: number })[]> {
+): Promise<(DramaRow & { episode: number; position_seconds: number; duration_seconds: number | null })[]> {
   return (await sql`
-    SELECT d.*, w.episode, w.position_seconds
+    SELECT d.*, w.episode, w.position_seconds, w.duration_seconds
     FROM watch_progress w JOIN dramas d ON d.id = w.drama_id
     ORDER BY w.updated_at DESC LIMIT ${limit}
-  `) as (DramaRow & { episode: number; position_seconds: number })[];
+  `) as (DramaRow & { episode: number; position_seconds: number; duration_seconds: number | null })[];
 }
 
 export async function getProgress(dramaId: string): Promise<WatchProgress | null> {
@@ -113,13 +117,15 @@ export async function getProgress(dramaId: string): Promise<WatchProgress | null
   return rows[0] ?? null;
 }
 
-export async function saveProgress(dramaId: string, episode: number, positionSeconds: number): Promise<void> {
+export async function saveProgress(dramaId: string, episode: number, positionSeconds: number, durationSeconds?: number): Promise<void> {
+  await sql`ALTER TABLE watch_progress ADD COLUMN IF NOT EXISTS duration_seconds INTEGER`;
   await sql`
-    INSERT INTO watch_progress (drama_id, episode, position_seconds, updated_at)
-    VALUES (${dramaId}, ${episode}, ${positionSeconds}, NOW())
+    INSERT INTO watch_progress (drama_id, episode, position_seconds, duration_seconds, updated_at)
+    VALUES (${dramaId}, ${episode}, ${positionSeconds}, ${durationSeconds ?? null}, NOW())
     ON CONFLICT (drama_id) DO UPDATE SET
       episode = EXCLUDED.episode,
       position_seconds = EXCLUDED.position_seconds,
+      duration_seconds = COALESCE(EXCLUDED.duration_seconds, watch_progress.duration_seconds),
       updated_at = EXCLUDED.updated_at
   `;
 }
@@ -385,6 +391,10 @@ export interface TopImdbEntry {
   imdb_rating: number | null;
   imdb_votes: number | null;
   imdb_wr: number | null;
+  has_videos: number;
+  alt_source: string | null;
+  episode_count: number | null;
+  platform: string | null;
 }
 
 /** Top IMDb-rated dramas by weighted rating (IMDb Top-250 formula).
@@ -401,7 +411,8 @@ export async function getTopImdb(limit: number, sort: TopImdbSort = "weighted"):
           ? sql`ORDER BY imdb_votes DESC`
           : sql`ORDER BY imdb_wr DESC`;
     const rows = (await sql`
-      SELECT id, title, poster_url, imdb_id, imdb_rating, imdb_votes, imdb_wr
+      SELECT id, title, poster_url, imdb_id, imdb_rating, imdb_votes, imdb_wr,
+             has_videos, alt_source, episode_count, platform
       FROM dramas
       WHERE COALESCE(is_duplicate,0) = 0
         AND imdb_wr IS NOT NULL
@@ -486,4 +497,105 @@ export async function getSavedDramas(
     sql`SELECT COUNT(*) AS c FROM saved_dramas WHERE list_type = ${listType}`,
   ]);
   return { dramas: dramas as DramaRow[], total: Number((countRows as { c: string }[])[0]?.c ?? 0) };
+}
+
+/** Featured drama for the homepage hero: top-rated, watchable, with poster. Rotates by slot. */
+export async function getFeaturedDrama(slot = 0): Promise<DramaRow | null> {
+  try {
+    const rows = (await sql`
+      SELECT * FROM dramas
+      WHERE COALESCE(is_duplicate,0) = 0
+        AND has_videos = 1
+        AND poster_url IS NOT NULL AND poster_url != ''
+        AND imdb_wr IS NOT NULL AND imdb_votes >= 25 AND imdb_votes <= 5000
+      ORDER BY imdb_wr DESC
+      LIMIT 1 OFFSET ${slot % 10}
+    `) as DramaRow[];
+    return rows[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Trending: most-saved dramas (real popularity signal), newest saves first on ties. */
+export async function getTrending(limit = 12): Promise<DramaRow[]> {
+  try {
+    await ensureSavedTable();
+    const rows = (await sql`
+      SELECT ${sql.unsafe(CARD_COLS.replace(/(\w+)/g, "d.$1"))}, COUNT(*) AS saves
+      FROM saved_dramas s JOIN dramas d ON d.id = s.drama_id
+      WHERE COALESCE(d.is_duplicate,0) = 0
+      GROUP BY d.id
+      ORDER BY saves DESC, MAX(s.added_at) DESC
+      LIMIT ${limit}
+    `) as DramaRow[];
+    if (rows.length >= 4) return rows;
+    // Fallback: newest watchable dramas
+    return (await sql`
+      SELECT ${sql.unsafe(CARD_COLS)} FROM dramas
+      WHERE COALESCE(is_duplicate,0) = 0 AND has_videos = 1
+      ORDER BY scraped_at DESC LIMIT ${limit}
+    `) as DramaRow[];
+  } catch {
+    return [];
+  }
+}
+
+/** Related dramas scored by shared genres, tropes, and cast. Real "More Like This". */
+export async function getRelatedDramas(
+  dramaId: string,
+  genres: string[],
+  tropes: string[],
+  actors: string[],
+  limit = 12
+): Promise<DramaRow[]> {
+  try {
+    const tags = Array.from(new Set([...genres, ...tropes]));
+    if (tags.length === 0 && actors.length === 0) return [];
+    // Candidate pool: dramas sharing at least one genre/trope tag (JSON text match)
+    const likeConds = tags.map((_, i) => `(genres LIKE $${i + 2} OR tropes LIKE $${i + 2})`);
+    const tagParams = tags.map((t) => `%"${t}"%`);
+    const where =
+      `COALESCE(is_duplicate,0) = 0 AND id != $1` +
+      (likeConds.length ? ` AND (${likeConds.join(" OR ")})` : "");
+    const rows = (await sql.query(
+      `SELECT ${CARD_COLS}, genres AS g_raw, tropes AS t_raw, cast_data FROM dramas WHERE ${where} LIMIT 400`,
+      [dramaId, ...tagParams]
+    )) as (DramaRow & { g_raw: string | null; t_raw: string | null; cast_data: string | null })[];
+
+    const gSet = new Set(genres.map((g) => g.toLowerCase()));
+    const tSet = new Set(tropes.map((t) => t.toLowerCase()));
+    const aSet = new Set(actors.map((a) => a.toLowerCase()));
+    const parse = (raw: string | null): string[] => {
+      try {
+        const v = JSON.parse(raw || "[]");
+        return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
+      } catch {
+        return [];
+      }
+    };
+    const scored = rows
+      .map((d) => {
+        const dg = parse(d.g_raw).map((x) => x.toLowerCase());
+        const dt = parse(d.t_raw).map((x) => x.toLowerCase());
+        let cast: string[] = [];
+        try {
+          const cd = JSON.parse(d.cast_data || "[]");
+          cast = (Array.isArray(cd) ? cd : []).map((c: any) => String(c.actor || c).toLowerCase());
+        } catch {}
+        const score =
+          dg.filter((g) => gSet.has(g)).length * 2 +
+          dt.filter((t) => tSet.has(t)).length * 3 +
+          cast.filter((a) => aSet.has(a)).length * 4 +
+          (d.has_videos ? 1 : 0);
+        return { d, score };
+      })
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((s) => s.d);
+    return scored;
+  } catch {
+    return [];
+  }
 }

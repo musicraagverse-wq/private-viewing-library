@@ -22,7 +22,7 @@ function hrefWith(p: { q?: string; letter?: string; photo?: string }): string {
   if (p.letter) sp.set("letter", p.letter);
   if (p.photo) sp.set("photo", p.photo);
   const s = sp.toString();
-  return `/artists${s ? `?${s}` : ""}`;
+  return `/actors${s ? `?${s}` : ""}`;
 }
 
 export default async function ArtistsPage({
@@ -76,7 +76,7 @@ export default async function ArtistsPage({
             type="search"
             name="q"
             defaultValue={q}
-            placeholder="Search artists…"
+            placeholder="Search actors…"
             className="w-full rounded-xl border border-border bg-surface px-4 py-2 text-sm text-text placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
           <button
@@ -132,7 +132,7 @@ export default async function ArtistsPage({
               {letter && <> starting with “{letter}”</>}
               {photosOnly && <> with photos</>}
               {q && <> matching “{q}”</>} —{" "}
-              <Link href="/artists" className="text-primary hover:underline">
+              <Link href="/actors" className="text-primary hover:underline">
                 clear
               </Link>
             </>
@@ -145,7 +145,7 @@ export default async function ArtistsPage({
             {artists.map((a) => (
               <Link
                 key={a.nconst ?? a.actor}
-                href={`/artist/${encodeURIComponent(a.actor)}`}
+                href={`/actor/${encodeURIComponent(a.actor)}`}
                 className="card-hover flex items-center gap-3 rounded-xl border border-border bg-surface p-3"
               >
                 {a.photo_url ? (

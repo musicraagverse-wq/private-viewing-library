@@ -7,6 +7,13 @@ const nextConfig = {
       { protocol: "http", hostname: "**" },
     ],
   },
+  async redirects() {
+    return [
+      { source: "/artists", destination: "/actors", permanent: true },
+      { source: "/artists/:path*", destination: "/actors/:path*", permanent: true },
+      { source: "/artist/:path*", destination: "/actor/:path*", permanent: true },
+    ];
+  },
 };
 
 export default nextConfig;
