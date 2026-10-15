@@ -5,6 +5,7 @@ import { useCallback, useState } from "react";
 import Player from "@/components/Player";
 import { Poster } from "@/components/DramaCard";
 import PlatformMark from "@/components/PlatformMark";
+import RatingButtons from "@/components/RatingButtons";
 
 type UpNextItem = { id: string; title: string; poster_url: string | null };
 
@@ -227,6 +228,10 @@ export default function DramaHero({
                   Not streaming here yet
                 </span>
               )}
+            </div>
+
+            <div className="mt-4">
+              <RatingButtons dramaId={dramaId} title={title} />
             </div>
           </div>
         </div>

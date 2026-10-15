@@ -31,7 +31,10 @@ export default async function CollectionPage({
           {collection.title}
         </h1>
         <p className="mt-1 text-sm text-muted">{collection.description}</p>
-        <p className="mt-1 text-xs text-muted">{total.toLocaleString()} titles</p>
+        <blockquote className="mt-3 max-w-2xl border-l-2 border-primary/50 pl-4 text-sm italic leading-relaxed text-text/85">
+          {collection.note}
+        </blockquote>
+        <p className="mt-2 text-xs text-muted">{total.toLocaleString()} titles</p>
       </div>
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
         {dramas.map((d) => (

@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { browseDramas, countDramas, getPlatforms, getContinueWatching, getGenres, getTropes, getTopImdb, getFeaturedDrama, getTrending, getFreshArrivals, pingDb, COLLECTIONS } from "@/lib/db";
+import { MOODS } from "@/lib/moods";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import ContinueWatching from "@/components/ContinueWatching";
+import TasteQuiz from "@/components/TasteQuiz";
+import ForYou from "@/components/ForYou";
 import SortSelect from "@/components/SortSelect";
+import EpRangeSelect from "@/components/EpRangeSelect";
 import Hero from "@/components/Hero";
 import Rail from "@/components/Rail";
 import { platformLogo, platformInitial, formatPlatform, sortPlatforms } from "@/lib/platforms";
@@ -31,13 +35,16 @@ function href(params: Record<string, string | undefined>, overrides: Record<stri
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { q?: string; platform?: string; page?: string; videos?: string; sort?: string };
+  searchParams: { q?: string; platform?: string; page?: string; videos?: string; sort?: string; ep?: string };
 }) {
   const q = (searchParams.q ?? "").trim();
   const platform = searchParams.platform ?? "";
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
   const onlyWithVideos = searchParams.videos === "1";
   const sort = searchParams.sort === "rating" ? "rating" : "newest";
+  const epRange = (["short", "medium", "long"] as const).includes(searchParams.ep as any)
+    ? (searchParams.ep as "short" | "medium" | "long")
+    : "";
 
   let dramas: Awaited<ReturnType<typeof browseDramas>> = [];
   let total = 0;
@@ -54,8 +61,8 @@ export default async function Home({
   try {
     await pingDb();
     [dramas, total, platforms, freshArrivals, genres, tropes, topImdb] = await Promise.all([
-      browseDramas({ q, source: "", platform, page, perPage: PER_PAGE, onlyWithVideos, sort }),
-      countDramas(q, "", platform),
+      browseDramas({ q, source: "", platform, page, perPage: PER_PAGE, onlyWithVideos, sort, epRange }),
+      countDramas(q, "", platform, epRange),
       getPlatforms(),
       getFreshArrivals(12),
       getGenres(),
@@ -73,7 +80,7 @@ export default async function Home({
     dbError = true;
   }
 
-  const base = { q: q || undefined, platform: platform || undefined, videos: onlyWithVideos ? "1" : undefined, sort: sort === "rating" ? "rating" : undefined };
+  const base = { q: q || undefined, platform: platform || undefined, videos: onlyWithVideos ? "1" : undefined, sort: sort === "rating" ? "rating" : undefined, ep: epRange || undefined };
   const isHome = !q && !platform && page === 1;
 
   return (
@@ -92,6 +99,12 @@ export default async function Home({
           {/* Continue Watching */}
           {continueWatching.length > 0 && <ContinueWatching items={continueWatching} />}
 
+          {/* Taste quiz — cold-start personalization */}
+          <TasteQuiz tropes={tropes} />
+
+          {/* For You — personalized rows */}
+          <ForYou />
+
           {/* Trending — most-saved (real signal) */}
           {trending.length > 0 && (
             <Rail title="Trending Now" href="/explore">
@@ -100,6 +113,25 @@ export default async function Home({
               ))}
             </Rail>
           )}
+
+          {/* Browse by Mood */}
+          <section aria-label="Browse by mood">
+            <div className="mb-4 flex items-baseline justify-between">
+              <h2 className="text-xl font-bold tracking-tight sm:text-2xl">Watch by Mood</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+              {MOODS.map((m) => (
+                <Link
+                  key={m.slug}
+                  href={`/mood/${m.slug}`}
+                  className="card-hover group rounded-2xl border border-border bg-surface p-5 text-center"
+                >
+                  <div className="text-3xl" aria-hidden="true">{m.icon}</div>
+                  <h3 className="mt-2 text-sm font-bold text-text group-hover:text-primary">{m.title}</h3>
+                </Link>
+              ))}
+            </div>
+          </section>
 
           {/* Curated collections — editorial */}
           <section aria-label="Curated collections">
@@ -119,6 +151,9 @@ export default async function Home({
                   <div className="text-3xl" aria-hidden="true">{c.icon}</div>
                   <h3 className="mt-3 text-lg font-bold text-text group-hover:text-primary">{c.title}</h3>
                   <p className="mt-1 text-sm leading-relaxed text-muted">{c.description}</p>
+                  <p className="mt-3 border-l-2 border-primary/50 pl-3 text-sm italic leading-relaxed text-text/80">
+                    {c.note}
+                  </p>
                   <span className="mt-3 inline-block text-sm font-semibold text-primary">
                     Explore →
                   </span>
@@ -227,6 +262,7 @@ export default async function Home({
               </h2>
               <div className="flex items-center gap-2">
                 <SortSelect value={sort} />
+                <EpRangeSelect value={epRange} />
                 <Link
                   href={href(base, { videos: onlyWithVideos ? undefined : "1", page: undefined })}
                   className={`rounded-full border px-4 py-1.5 text-xs font-bold ${onlyWithVideos ? "border-primary bg-primary/10 text-primary" : "border-border text-muted hover:text-primary"}`}

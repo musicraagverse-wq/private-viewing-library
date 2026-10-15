@@ -12,7 +12,8 @@ function buildWhere(
   source: string,
   platform: string,
   onlyWithVideos: boolean,
-  params: (string | number)[]
+  params: (string | number)[],
+  epRange?: "" | "short" | "medium" | "long"
 ): string {
   const where: string[] = ["COALESCE(is_duplicate,0) = 0"];
   if (q) {
@@ -32,6 +33,10 @@ function buildWhere(
   if (onlyWithVideos) {
     where.push("has_videos = 1");
   }
+  // Binge-length buckets by episode count (short dramas run ~1-3 min/ep)
+  if (epRange === "short") where.push("episode_count IS NOT NULL AND episode_count < 40");
+  else if (epRange === "medium") where.push("episode_count >= 40 AND episode_count <= 80");
+  else if (epRange === "long") where.push("episode_count > 80");
   return where.join(" AND ");
 }
 
@@ -39,11 +44,16 @@ export async function pingDb(): Promise<void> {
   await sql`SELECT 1`;
 }
 
-export async function countDramas(q: string, source: string, platform: string): Promise<number> {
+export async function countDramas(
+  q: string,
+  source: string,
+  platform: string,
+  epRange?: "" | "short" | "medium" | "long"
+): Promise<number> {
   const params: (string | number)[] = [];
-  const where = buildWhere(q, source, platform, false, params);
+  const where = buildWhere(q, source, platform, false, params, epRange);
   const rows = await sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE ${where}`, params);
-  return Number(rows[0].c);
+  return Number((rows as { c: string }[])[0]?.c ?? 0);
 }
 
 export interface BrowseOpts {
@@ -54,12 +64,13 @@ export interface BrowseOpts {
   perPage: number;
   onlyWithVideos: boolean;
   sort?: "newest" | "rating";
+  epRange?: "" | "short" | "medium" | "long";
 }
 
 export async function browseDramas(opts: BrowseOpts): Promise<DramaRow[]> {
-  const { q, source, platform, page, perPage, onlyWithVideos, sort } = opts;
+  const { q, source, platform, page, perPage, onlyWithVideos, sort, epRange } = opts;
   const params: (string | number)[] = [];
-  const where = buildWhere(q, source, platform, onlyWithVideos, params);
+  const where = buildWhere(q, source, platform, onlyWithVideos, params, epRange);
   const offset = (page - 1) * perPage;
   params.push(perPage, offset);
   const limitPh = params.length - 1;
@@ -249,15 +260,53 @@ export interface Collection {
   title: string;
   description: string;
   icon: string;
+  /** Curator's note: one or two sentences on why this collection is worth your evening. */
+  note: string;
 }
 
 export const COLLECTIONS: Collection[] = [
-  { slug: "divorce-revenge", title: "Divorce & Revenge", description: "She left, now he regrets. She returns, now they pay.", icon: "💔" },
-  { slug: "supernatural", title: "Supernatural", description: "Werewolves, vampires, and cultivators.", icon: "🌙" },
-  { slug: "billionaire-romance", title: "Billionaire Romance", description: "CEOs, heirs, and secret fortunes.", icon: "💎" },
-  { slug: "family-drama", title: "Family Drama", description: "Stepfamilies, in-laws, and household wars.", icon: "🏠" },
-  { slug: "second-chances", title: "Second Chances", description: "Rebirth, time travel, and fresh starts.", icon: "🔄" },
-  { slug: "crime-underworld", title: "Crime & Underworld", description: "Mafia bosses, undercover agents, kidnappings.", icon: "🎭" },
+  {
+    slug: "divorce-revenge",
+    title: "Divorce & Revenge",
+    description: "She left, now he regrets. She returns, now they pay.",
+    icon: "💔",
+    note: "The most satisfying arc in short drama: underestimated heroine walks away, returns untouchable, and every humiliation gets repaid with interest. Start here if you want guaranteed catharsis.",
+  },
+  {
+    slug: "supernatural",
+    title: "Supernatural",
+    description: "Werewolves, vampires, and cultivators.",
+    icon: "🌙",
+    note: "Where short drama goes full fantasy — fated mates, hidden bloodlines, and power awakenings. The stakes are cosmic but the episodes are still three minutes.",
+  },
+  {
+    slug: "billionaire-romance",
+    title: "Billionaire Romance",
+    description: "CEOs, heirs, and secret fortunes.",
+    icon: "💎",
+    note: "The genre that built the format. Secret marriages, hidden identities, and a billionaire who is definitely not who he says he is. Pure comfort viewing.",
+  },
+  {
+    slug: "family-drama",
+    title: "Family Drama",
+    description: "Stepfamilies, in-laws, and household wars.",
+    icon: "🏠",
+    note: "No villains hit harder than family. Scheming mothers-in-law, stolen inheritances, and heroines who outplay everyone at the dinner table.",
+  },
+  {
+    slug: "second-chances",
+    title: "Second Chances",
+    description: "Rebirth, time travel, and fresh starts.",
+    icon: "🔄",
+    note: "What if you could live it all over — knowing everything? These are the smartest-plotted dramas in the catalog: every rewatch reveals a setup you missed.",
+  },
+  {
+    slug: "crime-underworld",
+    title: "Crime & Underworld",
+    description: "Mafia bosses, undercover agents, kidnappings.",
+    icon: "🎭",
+    note: "Short drama's answer to the crime saga: dangerous men, double lives, and heroines who walk into the lion's den on purpose. Tense from episode one.",
+  },
 ];
 
 const COLLECTION_TROPES: Record<string, string[]> = {
@@ -286,6 +335,27 @@ export async function browseCollection(slug: string, page: number, perPage: numb
     ),
   ]);
   return { dramas: dramas as DramaRow[], total: Number(countRows[0].c) };
+}
+
+/** Browse dramas matching any of the given trope tags. Powers mood pages and taste picks. */
+export async function browseByTropes(
+  tropes: string[],
+  page: number,
+  perPage: number,
+  orderBy: "newest" | "rating" = "newest"
+): Promise<{ dramas: DramaRow[]; total: number }> {
+  if (tropes.length === 0) return { dramas: [], total: 0 };
+  const offset = (page - 1) * perPage;
+  const conditions = tropes.map((t) => `tropes ILIKE '%"${t.replace(/"/g, '\\"')}"%'`).join(" OR ");
+  const order = orderBy === "rating" ? "imdb_wr DESC NULLS LAST" : "scraped_at DESC";
+  const [dramas, countRows] = await Promise.all([
+    sql.query(
+      `SELECT ${CARD_COLS} FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND (${conditions}) ORDER BY ${order} LIMIT $1 OFFSET $2`,
+      [perPage, offset]
+    ),
+    sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND (${conditions})`, []),
+  ]);
+  return { dramas: dramas as DramaRow[], total: Number((countRows as { c: string }[])[0]?.c ?? 0) };
 }
 
 export interface ArtistEntry {
@@ -595,6 +665,22 @@ export async function getRelatedDramas(
       .slice(0, limit)
       .map((s) => s.d);
     return scored;
+  } catch {
+    return [];
+  }
+}
+
+/** Fetch dramas by id list, preserving the requested order. Used for shared lists. */
+export async function getDramasByIds(ids: string[]): Promise<DramaRow[]> {
+  const clean = Array.from(new Set(ids.filter(Boolean))).slice(0, 100);
+  if (clean.length === 0) return [];
+  try {
+    const rows = (await sql.query(
+      `SELECT ${CARD_COLS} FROM dramas WHERE id = ANY($1)`,
+      [clean]
+    )) as DramaRow[];
+    const order = new Map(clean.map((id, i) => [id, i]));
+    return rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
   } catch {
     return [];
   }
