@@ -5,6 +5,10 @@ import { COOKIE_NAME, verifySessionToken } from "./lib/auth";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // TEMPORARY (Harsh, 2026-10-15): password gate disabled for a while.
+  // Re-enable by deleting this early return.
+  return NextResponse.next();
+
   // Allow the login page and its API through
   if (pathname === "/login" || pathname === "/api/auth") {
     return NextResponse.next();
