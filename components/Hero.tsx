@@ -3,6 +3,7 @@ import Image from "next/image";
 import type { DramaRow } from "@/lib/types";
 import PlatformMark from "./PlatformMark";
 import WatchLaterButton from "./WatchLaterButton";
+import { Poster } from "./Poster";
 
 function parseList(raw: string | null): string[] {
   if (!raw) return [];
@@ -41,7 +42,7 @@ export default function Hero({ drama }: { drama: DramaRow }) {
         {drama.poster_url && (
           <div className="hidden w-44 shrink-0 overflow-hidden rounded-xl shadow-2xl shadow-black/60 ring-1 ring-white/10 sm:block md:w-52">
             <div className="relative aspect-[3/4]">
-              <Image src={drama.poster_url} alt={drama.title} fill sizes="208px" className="object-cover" priority />
+              <Poster title={drama.title} posterUrl={drama.poster_url} className="h-full w-full" />
             </div>
           </div>
         )}

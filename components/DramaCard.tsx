@@ -1,5 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
+import { Poster } from "./Poster";
+export { Poster };
 import { SaveButtons } from "./SavedLists";
 import PlatformMark from "./PlatformMark";
 
@@ -13,37 +14,6 @@ export type DramaRow = {
   alt_source: string | null;
   imdb_rating?: number | null;
 };
-
-function gradientFor(title: string): string {
-  const palettes = [
-    "from-red-950 via-neutral-900 to-neutral-800",
-    "from-neutral-900 via-red-950 to-neutral-800",
-    "from-stone-900 via-neutral-900 to-red-950",
-  ];
-  let h = 0;
-  for (const ch of title) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return palettes[h % palettes.length];
-}
-
-export function Poster({ title, posterUrl, className }: { title: string; posterUrl: string | null; className?: string }) {
-  if (posterUrl) {
-    return (
-      <Image
-        src={posterUrl}
-        alt={title}
-        loading="lazy"
-        fill
-        sizes="(max-width: 640px) 33vw, (max-width: 1024px) 25vw, 12vw"
-        className={`object-cover ${className ?? ""}`}
-      />
-    );
-  }
-  return (
-    <div className={`flex items-center justify-center bg-gradient-to-br p-3 text-center ${gradientFor(title)} ${className ?? ""}`}>
-      <span className="line-clamp-4 text-xs font-bold text-white/90">{title}</span>
-    </div>
-  );
-}
 
 export function dailymotionId(alt: string | null): string | null {
   if (!alt) return null;
