@@ -13,9 +13,10 @@ module.exports = {
         surface: "#161A22",     // secondary surface
         card: "#222734",        // elevated surface
         border: "#292B34",      // subtle borders
-        primary: "#E42535",     // brand red — primary actions only
-        primaryhover: "#F03545",// interactive hover red
-        primarydark: "#b20710", // deep red (legacy)
+        primary: "#8B5CF6",     // brand violet — primary actions only
+        primaryhover: "#A78BFA",// interactive hover violet
+        primarydark: "#5B4BD6", // deep violet (gradients, logo)
+        danger: "#E42535",      // destructive / error red — never brand
         text: "#F7F8FA",        // primary text
         muted: "#A5ACBB",       // secondary text
         gold: "#f5c518",

@@ -11,7 +11,7 @@ body {
 }
 
 ::selection {
-  background: rgba(228, 37, 53, 0.4);
+  background: rgba(139, 92, 246, 0.45);
 }
 
 * {
@@ -32,7 +32,7 @@ body {
 }
 .card-hover:hover {
   transform: scale(1.03);
-  box-shadow: 0 8px 24px rgba(228, 37, 53, 0.25);
+  box-shadow: 0 8px 24px rgba(139, 92, 246, 0.28);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -45,7 +45,7 @@ body {
 
 /* Visible keyboard focus */
 :focus-visible {
-  outline: 2px solid #E42535;
+  outline: 2px solid #8B5CF6;
   outline-offset: 2px;
   border-radius: 4px;
 }
