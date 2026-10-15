@@ -88,7 +88,7 @@ export default async function Home({
   return (
     <div className="space-y-10">
       {dbError && (
-        <div className="rounded-lg border border-border bg-surface p-6 text-center text-sm text-primary">
+        <div className="callout-info text-center" role="status">
           Busy right now — please refresh in a moment.
         </div>
       )}

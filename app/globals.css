@@ -11,19 +11,19 @@ body {
 }
 
 ::selection {
-  background: rgba(229, 9, 20, 0.4);
+  background: rgba(228, 37, 53, 0.4);
 }
 
 * {
   scrollbar-width: thin;
-  scrollbar-color: #2e2e38 transparent;
+  scrollbar-color: #292B34 transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #2e2e38;
+  background: #292B34;
   border-radius: 8px;
 }
 
@@ -32,7 +32,7 @@ body {
 }
 .card-hover:hover {
   transform: scale(1.03);
-  box-shadow: 0 8px 24px rgba(229, 9, 20, 0.2);
+  box-shadow: 0 8px 24px rgba(228, 37, 53, 0.25);
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -45,9 +45,14 @@ body {
 
 /* Visible keyboard focus */
 :focus-visible {
-  outline: 2px solid #e50914;
+  outline: 2px solid #E42535;
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* Informational callout — blue, for neutral info states (not errors, not CTAs) */
+.callout-info {
+  @apply rounded-xl border border-info/30 bg-info/10 px-4 py-3 text-sm text-text;
 }
 
 /* Respect reduced motion */

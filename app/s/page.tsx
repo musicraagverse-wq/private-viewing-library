@@ -18,8 +18,8 @@ export default async function SharedListPage({
       <div>
         <Link href="/" className="text-sm text-muted hover:text-primary">← Home</Link>
         <h1 className="mt-2 text-3xl font-bold tracking-tight">Shared List</h1>
-        <p className="mt-1 text-sm text-muted">
-          Someone shared {dramas.length} drama{dramas.length === 1 ? "" : "s"} with you.
+        <p className="callout-info mt-3 max-w-2xl" role="status">
+          Someone shared {dramas.length} drama{dramas.length === 1 ? "" : "s"} with you. This is a read-only preview — save anything you like to your own lists.
         </p>
       </div>
       {dramas.length === 0 ? (

@@ -8,17 +8,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ShortDrama design tokens — luxurious cinematic dark theme
-        bg: "#0B0C10",          // primary background
-        surface: "#121318",     // secondary background
-        card: "#1A1C24",        // elevated surface
+        // ShortDrama design tokens — cinematic dark theme, deep-blue undertones
+        bg: "#0B0D12",          // primary background
+        surface: "#161A22",     // secondary surface
+        card: "#222734",        // elevated surface
         border: "#292B34",      // subtle borders
-        primary: "#E12535",     // brand red
+        primary: "#E42535",     // brand red — primary actions only
         primaryhover: "#F03545",// interactive hover red
         primarydark: "#b20710", // deep red (legacy)
-        text: "#F5F5F7",        // primary text
-        muted: "#A0A3AE",       // secondary text
+        text: "#F7F8FA",        // primary text
+        muted: "#A5ACBB",       // secondary text
         gold: "#f5c518",
+        info: "#5699FF",        // informational blue — sparing use
       },
       fontFamily: {
         display: ["var(--font-inter)", "system-ui", "sans-serif"],
