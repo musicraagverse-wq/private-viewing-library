@@ -152,6 +152,18 @@ interface Suggestion {
   episode_count: number | null;
 }
 
+function SuggestionPoster({ url, title }: { url: string | null; title: string }) {
+  const [broken, setBroken] = useState(false);
+  if (!url || broken) {
+    return (
+      <span className="flex h-10 w-8 shrink-0 items-center justify-center rounded bg-border text-xs font-bold text-muted" aria-hidden="true">
+        {title.charAt(0)}
+      </span>
+    );
+  }
+  return <img src={url} alt="" className="h-10 w-8 shrink-0 rounded object-cover" loading="lazy" onError={() => setBroken(true)} />;
+}
+
 function SearchBox({ onSubmit }: { onSubmit?: () => void }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -283,13 +295,7 @@ function SearchBox({ onSubmit }: { onSubmit?: () => void }) {
                   }}
                   className={`flex w-full items-center gap-3 px-3 py-2 text-left transition ${highlight === i ? "bg-surface" : ""}`}
                 >
-                  {s.poster_url ? (
-                    <img src={s.poster_url} alt="" className="h-10 w-8 rounded object-cover" loading="lazy" />
-                  ) : (
-                    <span className="flex h-10 w-8 items-center justify-center rounded bg-border text-xs font-bold text-muted" aria-hidden="true">
-                      {s.title.charAt(0)}
-                    </span>
-                  )}
+                  <SuggestionPoster url={s.poster_url} title={s.title} />
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold text-text">{s.title}</span>
                     {s.episode_count ? <span className="block text-xs text-muted">{s.episode_count} episodes</span> : null}

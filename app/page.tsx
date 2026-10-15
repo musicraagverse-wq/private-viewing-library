@@ -71,12 +71,17 @@ export default async function Home({
       getTopImdb(50),
     ]);
     if (!q && !platform && page === 1) {
-      [continueWatching, trending, featured, hiddenGems] = await Promise.all([
+      // Independent sections — one failing query must not kill the others.
+      const [cw, tr, ft, hg] = await Promise.allSettled([
         getContinueWatching(10),
         getTrending(12),
         getFeaturedDrama(rotationSlot()),
         getHiddenGems(12),
       ]);
+      continueWatching = cw.status === "fulfilled" ? cw.value : [];
+      trending = tr.status === "fulfilled" ? tr.value : [];
+      featured = ft.status === "fulfilled" ? ft.value : null;
+      hiddenGems = hg.status === "fulfilled" ? hg.value : [];
     }
   } catch {
     dbError = true;

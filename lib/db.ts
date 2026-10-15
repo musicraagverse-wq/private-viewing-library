@@ -116,11 +116,22 @@ export async function getSources(): Promise<{ source: string; c: number }[]> {
 export async function getContinueWatching(
   limit = 8
 ): Promise<(DramaRow & { episode: number; position_seconds: number; duration_seconds: number | null })[]> {
-  return (await sql`
-    SELECT d.*, w.episode, w.position_seconds, w.duration_seconds
-    FROM watch_progress w JOIN dramas d ON d.id = w.drama_id
-    ORDER BY w.updated_at DESC LIMIT ${limit}
-  `) as (DramaRow & { episode: number; position_seconds: number; duration_seconds: number | null })[];
+  try {
+    await sql`CREATE TABLE IF NOT EXISTS watch_progress (
+      drama_id TEXT PRIMARY KEY,
+      episode INTEGER NOT NULL DEFAULT 1,
+      position_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,
+      duration_seconds INTEGER,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`;
+    return (await sql`
+      SELECT d.*, w.episode, w.position_seconds, w.duration_seconds
+      FROM watch_progress w JOIN dramas d ON d.id = w.drama_id
+      ORDER BY w.updated_at DESC LIMIT ${limit}
+    `) as (DramaRow & { episode: number; position_seconds: number; duration_seconds: number | null })[];
+  } catch {
+    return [];
+  }
 }
 
 export async function getProgress(dramaId: string): Promise<WatchProgress | null> {
