@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getDrama, getProgress, getRelatedDramas } from "@/lib/db";
-import { parseEpisodeUrls, dailymotionId } from "@/lib/types";
+import { parseEpisodeUrls, parseEpisodeIds, dailymotionId } from "@/lib/types";
+import { isResolvableSource } from "@/lib/stream";
 import DramaCard from "@/components/DramaCard";
 import DramaHero from "@/components/DramaHero";
 import PlatformMark from "@/components/PlatformMark";
@@ -48,7 +49,12 @@ export default async function DramaDetail({ params }: { params: { id: string } }
   }
 
   const urls = parseEpisodeUrls(drama.episode_urls);
-  const epCount = urls.length || drama.episode_count || 0;
+  const episodeIds = parseEpisodeIds(drama.episode_ids);
+  const resolvable =
+    isResolvableSource(drama.source) && Object.keys(episodeIds).length > 0;
+  const epCount = resolvable
+    ? Object.keys(episodeIds).length
+    : urls.length || drama.episode_count || 0;
   const progress = await getProgress(drama.id);
   const resumeEp = progress ? progress.episode : 1;
   const dm = dailymotionId(drama.alt_source);
@@ -99,6 +105,8 @@ export default async function DramaDetail({ params }: { params: { id: string } }
         resumeSeconds={progress && progress.episode === resumeEp ? progress.position_seconds : 0}
         dailymotionId={dm}
         upNext={related.slice(0, 6).map((d: any) => ({ id: d.id, title: d.title, poster_url: d.poster_url }))}
+        source={drama.source}
+        episodeIds={resolvable ? episodeIds : null}
       />
 
       {/* Synopsis */}

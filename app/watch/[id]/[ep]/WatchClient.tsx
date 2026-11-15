@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import Player from "@/components/Player";
+import StreamErrorCard from "@/components/StreamErrorCard";
+import { isResolvableSource } from "@/lib/stream";
+import { useResolvedStream } from "@/lib/use-resolved-stream";
 import { Poster } from "@/components/DramaCard";
 import PlatformMark from "@/components/PlatformMark";
 
@@ -49,6 +52,8 @@ export default function WatchClient({
   dailymotionEmbed,
   resumeAt,
   upNext,
+  source,
+  episodeIds,
 }: {
   dramaId: string;
   dramaTitle: string;
@@ -60,10 +65,26 @@ export default function WatchClient({
   dailymotionEmbed: string | null;
   resumeAt: number;
   upNext: UpNextItem[];
+  /** Row source; resolvable rows fetch a fresh stream at watch time. */
+  source: string | null;
+  /** Parsed episode_ids map, or null when the row has none. */
+  episodeIds: Record<string, number> | null;
 }) {
   const router = useRouter();
   const [showUpNext, setShowUpNext] = useState(false);
   const isLastEp = totalEps > 0 && episode >= totalEps;
+
+  // Resolvable rows (anydrama/dramadb with stored episodeIds) never play the
+  // stored URL — it expires ~6h after issue. Resolve fresh per episode.
+  const resolvable =
+    isResolvableSource(source) &&
+    episodeIds != null &&
+    episodeIds[String(episode)] != null;
+  const { status, stream, error, retry } = useResolvedStream(
+    dramaId,
+    episode,
+    resolvable && !showUpNext
+  );
 
   const onEnded = useCallback(() => {
     if (!isLastEp && totalEps > 0) {
@@ -77,6 +98,64 @@ export default function WatchClient({
     setShowUpNext(false);
     router.push(`/watch/${encodeURIComponent(dramaId)}/${ep}`);
   }, [router, dramaId]);
+
+  // Legacy path: stored URLs / Dailymotion — unchanged for all 88k legacy rows.
+  const legacyArea = videoUrl ? (
+    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} />
+  ) : dailymotionEmbed ? (
+    <div className="rounded-xl bg-card p-10 text-center">
+      <div className="text-4xl mb-4">🎬</div>
+      <p className="text-lg font-extrabold text-text">Available on Dailymotion</p>
+      <p className="mt-2 text-sm font-semibold text-muted">Dailymotion blocks embeds, but you can watch it there directly! 👇</p>
+      <a
+        href={`https://www.dailymotion.com/video/${dailymotionEmbed.split("/").pop()}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-6 inline-block rounded-lg bg-primary px-8 py-3 text-sm font-extrabold text-black hover:bg-primaryhover"
+      >
+        ▶ Watch on Dailymotion
+      </a>
+    </div>
+  ) : (
+    <div className="rounded-xl bg-card p-10 text-center">
+      <div className="text-4xl mb-4">🎭</div>
+      <p className="text-lg font-extrabold text-text">No video available yet</p>
+      <p className="mt-2 text-sm font-semibold text-muted">Check back soon! We're working on it. 🔄</p>
+    </div>
+  );
+
+  // Resolvable rows: fresh stream per episode; never the expired stored URL.
+  const resolveArea =
+    status === "ready" && stream ? (
+      <Player
+        dramaId={dramaId}
+        episode={episode}
+        totalEps={totalEps}
+        videoUrl={stream.url}
+        format={stream.format}
+        posterUrl={posterUrl}
+        resumeAt={resumeAt}
+        onEnded={onEnded}
+        onNavigate={onNavigate}
+      />
+    ) : status === "error" && error ? (
+      error.code === "not_resolvable" ? (
+        legacyArea
+      ) : (
+        <StreamErrorCard
+          error={error}
+          episode={episode}
+          totalEps={totalEps}
+          onRetry={retry}
+          onNextEpisode={!isLastEp ? () => onNavigate(episode + 1) : undefined}
+        />
+      )
+    ) : (
+      <div className="mx-auto flex aspect-[9/16] max-h-[82vh] w-full max-w-[420px] items-center justify-center rounded-xl bg-black">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" aria-label="Loading video" />
+        <span className="ml-3 text-sm font-semibold text-muted">Loading episode…</span>
+      </div>
+    );
 
   const playerArea = showUpNext ? (
     <div className="w-full select-none overflow-hidden rounded-xl bg-black p-6">
@@ -110,28 +189,10 @@ export default function WatchClient({
         Replay episode {episode}
       </button>
     </div>
-  ) : videoUrl ? (
-    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} />
-  ) : dailymotionEmbed ? (
-    <div className="rounded-xl bg-card p-10 text-center">
-      <div className="text-4xl mb-4">🎬</div>
-      <p className="text-lg font-extrabold text-text">Available on Dailymotion</p>
-      <p className="mt-2 text-sm font-semibold text-muted">Dailymotion blocks embeds, but you can watch it there directly! 👇</p>
-      <a
-        href={`https://www.dailymotion.com/video/${dailymotionEmbed.split("/").pop()}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-6 inline-block rounded-lg bg-primary px-8 py-3 text-sm font-extrabold text-black hover:bg-primaryhover"
-      >
-        ▶ Watch on Dailymotion
-      </a>
-    </div>
+  ) : resolvable ? (
+    resolveArea
   ) : (
-    <div className="rounded-xl bg-card p-10 text-center">
-      <div className="text-4xl mb-4">🎭</div>
-      <p className="text-lg font-extrabold text-text">No video available yet</p>
-      <p className="mt-2 text-sm font-semibold text-muted">Check back soon! We're working on it. 🔄</p>
-    </div>
+    legacyArea
   );
 
   return (

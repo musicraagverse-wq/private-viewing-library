@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDrama, getProgress, browseDramas } from "@/lib/db";
-import { parseEpisodeUrls, dailymotionId } from "@/lib/types";
+import { parseEpisodeUrls, parseEpisodeIds, dailymotionId } from "@/lib/types";
+import { isResolvableSource } from "@/lib/stream";
 import WatchClient from "./WatchClient";
 
 export const dynamic = "force-dynamic";
@@ -23,8 +24,16 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
   if (!drama) notFound();
 
   const urls = parseEpisodeUrls(drama.episode_urls);
-  const totalEps = urls.length || drama.episode_count || 0;
-  const videoUrl = ep >= 1 && ep <= urls.length ? urls[ep - 1] : null;
+  const episodeIds = parseEpisodeIds(drama.episode_ids);
+  // Resolvable rows (anydrama/dramadb with stored episodeIds): episode count
+  // comes from the map (stored URLs are sparse/expired), and no stored URL is
+  // passed down — the client resolves a fresh stream at watch time.
+  const resolvable =
+    isResolvableSource(drama.source) && Object.keys(episodeIds).length > 0;
+  const totalEps = resolvable
+    ? Object.keys(episodeIds).length
+    : urls.length || drama.episode_count || 0;
+  const videoUrl = resolvable ? null : ep >= 1 && ep <= urls.length ? urls[ep - 1] : null;
   const dm = !videoUrl ? dailymotionId(drama.alt_source) : null;
   const progress = await getProgress(drama.id);
   const resumeAt = progress && progress.episode === ep ? progress.position_seconds : 0;
@@ -70,9 +79,11 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
         dailymotionEmbed={dm ? `https://www.dailymotion.com/embed/video/${dm}` : null}
         resumeAt={resumeAt}
         upNext={upNext}
+        source={drama.source}
+        episodeIds={resolvable ? episodeIds : null}
       />
 
-      {!videoUrl && !dm && (
+      {!resolvable && !videoUrl && !dm && (
         <div className="glass rounded-xl p-8 text-center text-sm text-slate-400">
           No video available for this episode yet.
         </div>

@@ -15,6 +15,9 @@ const Player = dynamic(() => import("@/components/Player"), {
 import { Poster } from "@/components/DramaCard";
 import PlatformMark from "@/components/PlatformMark";
 import RatingButtons from "@/components/RatingButtons";
+import StreamErrorCard from "@/components/StreamErrorCard";
+import { isResolvableSource } from "@/lib/stream";
+import { useResolvedStream } from "@/lib/use-resolved-stream";
 
 type UpNextItem = { id: string; title: string; poster_url: string | null };
 
@@ -30,6 +33,8 @@ export default function DramaHero({
   resumeSeconds,
   dailymotionId,
   upNext,
+  source,
+  episodeIds,
 }: {
   dramaId: string;
   title: string;
@@ -42,12 +47,23 @@ export default function DramaHero({
   resumeSeconds: number;
   dailymotionId: string | null;
   upNext: UpNextItem[];
+  /** Row source; resolvable rows fetch a fresh stream at watch time. */
+  source: string | null;
+  /** Parsed episode_ids map, or null when the row has none. */
+  episodeIds: Record<string, number> | null;
 }) {
   const [watching, setWatching] = useState(false);
   const [episode, setEpisode] = useState(resumeEp);
   const [showUpNext, setShowUpNext] = useState(false);
 
-  const totalEps = episodeUrls.length || episodeCount;
+  // Resolvable rows: episode count from the map, fresh stream per episode.
+  const resolvable =
+    isResolvableSource(source) &&
+    episodeIds != null &&
+    Object.keys(episodeIds).length > 0;
+  const totalEps = resolvable
+    ? Object.keys(episodeIds).length
+    : episodeUrls.length || episodeCount;
   const isLastEp = totalEps > 0 && episode >= totalEps;
   const videoUrl = episode >= 1 && episode <= episodeUrls.length ? episodeUrls[episode - 1] : null;
 
@@ -70,6 +86,65 @@ export default function DramaHero({
     setEpisode(ep);
     setShowUpNext(false);
   }, []);
+
+  const { status, stream, error, retry } = useResolvedStream(
+    dramaId,
+    episode,
+    resolvable && watching && !showUpNext
+  );
+
+  // Legacy player: stored URL. Resolvable rows use a fresh stream instead.
+  const legacyPlayer = videoUrl ? (
+    <Player
+      dramaId={dramaId}
+      episode={episode}
+      totalEps={totalEps}
+      videoUrl={videoUrl}
+      posterUrl={posterUrl}
+      resumeAt={episode === resumeEp ? resumeSeconds : 0}
+      onEnded={onEnded}
+      onNavigate={onNavigate}
+      onClose={() => setWatching(false)}
+    />
+  ) : (
+    <div className="rounded-xl bg-card p-10 text-center">
+      <p className="text-lg font-extrabold text-text">No video available yet</p>
+    </div>
+  );
+
+  const heroPlayer = !resolvable ? (
+    legacyPlayer
+  ) : status === "ready" && stream ? (
+    <Player
+      dramaId={dramaId}
+      episode={episode}
+      totalEps={totalEps}
+      videoUrl={stream.url}
+      format={stream.format}
+      posterUrl={posterUrl}
+      resumeAt={episode === resumeEp ? resumeSeconds : 0}
+      onEnded={onEnded}
+      onNavigate={onNavigate}
+      onClose={() => setWatching(false)}
+    />
+  ) : status === "error" && error ? (
+    error.code === "not_resolvable" ? (
+      legacyPlayer
+    ) : (
+      <StreamErrorCard
+        error={error}
+        episode={episode}
+        totalEps={totalEps}
+        onRetry={retry}
+        onNextEpisode={!isLastEp ? () => onNavigate(episode + 1) : undefined}
+      />
+    )
+  ) : (
+    <div className="mx-auto flex aspect-[9/16] max-h-[82vh] w-full max-w-[420px] items-center justify-center rounded-xl bg-black">
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" aria-label="Loading video" />
+      <span className="ml-3 text-sm font-semibold text-muted">Loading episode…</span>
+    </div>
+  );
 
   // ---------- Watch mode: embedded player + episode grid (EveryDrama style) ----------
   if (watching) {
@@ -110,22 +185,8 @@ export default function DramaHero({
                   Replay episode {episode}
                 </button>
               </div>
-            ) : videoUrl ? (
-              <Player
-                dramaId={dramaId}
-                episode={episode}
-                totalEps={totalEps}
-                videoUrl={videoUrl}
-                posterUrl={posterUrl}
-                resumeAt={episode === resumeEp ? resumeSeconds : 0}
-                onEnded={onEnded}
-                onNavigate={onNavigate}
-                onClose={() => setWatching(false)}
-              />
             ) : (
-              <div className="rounded-xl bg-card p-10 text-center">
-                <p className="text-lg font-extrabold text-text">No video available yet</p>
-              </div>
+              heroPlayer
             )}
           </div>
 
@@ -216,7 +277,7 @@ export default function DramaHero({
             </div>
 
             <div className="mt-6">
-              {episodeUrls.length > 0 ? (
+              {episodeUrls.length > 0 || resolvable ? (
                 <button
                   onClick={() => startWatching(resumeEp)}
                   className="inline-block rounded-full bg-primary px-8 py-3 text-sm font-bold text-black shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -246,15 +307,15 @@ export default function DramaHero({
         </div>
 
         {/* Episodes — tap a number to play it right here */}
-        {episodeUrls.length > 0 && (
-          <div className="mt-6">
-            <h2 className="mb-3 text-lg font-bold text-white">
-              Episodes <span className="text-sm font-semibold text-white/50">({episodeUrls.length})</span>
-            </h2>
-            <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-10">
-              {episodeUrls.slice(0, 100).map((_, i) => {
-                const ep = i + 1;
-                return (
+        {(() => {
+          const gridEps = resolvable ? totalEps : episodeUrls.length;
+          return gridEps > 0 ? (
+            <div className="mt-6">
+              <h2 className="mb-3 text-lg font-bold text-white">
+                Episodes <span className="text-sm font-semibold text-white/50">({gridEps})</span>
+              </h2>
+              <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-10">
+                {Array.from({ length: Math.min(gridEps, 100) }, (_, i) => i + 1).map((ep) => (
                   <button
                     key={ep}
                     onClick={() => startWatching(ep)}
@@ -266,14 +327,14 @@ export default function DramaHero({
                   >
                     {ep}
                   </button>
-                );
-              })}
+                ))}
+              </div>
+              {gridEps > 100 && (
+                <p className="mt-2 text-xs text-white/50">Showing first 100 of {gridEps} episodes.</p>
+              )}
             </div>
-            {episodeUrls.length > 100 && (
-              <p className="mt-2 text-xs text-white/50">Showing first 100 of {episodeUrls.length} episodes.</p>
-            )}
-          </div>
-        )}
+          ) : null;
+        })()}
       </div>
     </section>
   );

@@ -93,7 +93,7 @@ export async function browseDramas(opts: BrowseOpts): Promise<DramaRow[]> {
 }
 
 export async function getDrama(id: string): Promise<DramaRow | null> {
-  return cached(`drama:${id}`, async (): Promise<DramaRow | null> => {
+  return cached(`drama:${id}:v2`, async (): Promise<DramaRow | null> => {
     const rows = (await sql`SELECT * FROM dramas WHERE id = ${id}`) as DramaRow[];
     return rows[0] ?? null;
   })();

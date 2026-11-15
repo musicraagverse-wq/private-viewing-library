@@ -20,6 +20,7 @@ export default function Player({
   episode,
   totalEps,
   videoUrl,
+  format,
   posterUrl,
   resumeAt,
   onEnded,
@@ -30,6 +31,8 @@ export default function Player({
   episode: number;
   totalEps: number;
   videoUrl: string;
+  /** Stream format from the resolver; falls back to URL sniffing when absent. */
+  format?: "hls" | "mp4";
   posterUrl: string | null;
   resumeAt: number;
   onEnded: () => void;
@@ -94,7 +97,9 @@ export default function Player({
 
     let hls: Hls | null = null;
     let cancelled = false;
-    const isHls = videoUrl.includes(".m3u8");
+    // Format comes from the resolver when available — never sniff alone:
+    // proxied HLS streams have extensionless URLs that native playback can't play.
+    const isHls = format === "hls" || videoUrl.includes(".m3u8");
     // restore the user's last volume on every (re)mount
     video.volume = volume;
     video.muted = muted;
@@ -138,7 +143,7 @@ export default function Player({
       hls?.destroy();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [videoUrl]);
+  }, [videoUrl, format]);
 
   // Save progress periodically while playing
   useEffect(() => {
