@@ -56,10 +56,12 @@ export async function countDramas(
   platform: string,
   epRange?: "" | "short" | "medium" | "long"
 ): Promise<number> {
+  return cached(`count:${q}|${source}|${platform}|${epRange ?? ""}`, async (): Promise<number> => {
   const params: (string | number)[] = [];
   const where = buildWhere(q, source, platform, false, params, epRange);
   const rows = await sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE ${where}`, params);
   return Number((rows as { c: string }[])[0]?.c ?? 0);
+  })();
 }
 
 export interface BrowseOpts {
@@ -75,6 +77,7 @@ export interface BrowseOpts {
 
 export async function browseDramas(opts: BrowseOpts): Promise<DramaRow[]> {
   const { q, source, platform, page, perPage, onlyWithVideos, sort, epRange } = opts;
+  return cached(`browse:${q}|${source}|${platform}|${page}|${perPage}|${onlyWithVideos ? 1 : 0}|${sort ?? ""}|${epRange ?? ""}`, async (): Promise<DramaRow[]> => {
   const params: (string | number)[] = [];
   const where = buildWhere(q, source, platform, onlyWithVideos, params, epRange);
   const offset = (page - 1) * perPage;
@@ -86,21 +89,26 @@ export async function browseDramas(opts: BrowseOpts): Promise<DramaRow[]> {
     `SELECT ${CARD_COLS} FROM dramas WHERE ${where} ORDER BY ${orderBy} LIMIT $${limitPh} OFFSET $${offsetPh}`,
     params
   )) as DramaRow[];
+  })();
 }
 
 export async function getDrama(id: string): Promise<DramaRow | null> {
-  const rows = (await sql`SELECT * FROM dramas WHERE id = ${id}`) as DramaRow[];
-  return rows[0] ?? null;
+  return cached(`drama:${id}`, async (): Promise<DramaRow | null> => {
+    const rows = (await sql`SELECT * FROM dramas WHERE id = ${id}`) as DramaRow[];
+    return rows[0] ?? null;
+  })();
 }
 
 export async function getDuplicatesOf(
   id: string
 ): Promise<{ id: string; source: string | null; has_videos: number }[]> {
-  return (await sql`SELECT id, source, has_videos FROM dramas WHERE duplicate_of = ${id}`) as {
-    id: string;
-    source: string | null;
-    has_videos: number;
-  }[];
+  return cached(`dupes:${id}`, async (): Promise<{ id: string; source: string | null; has_videos: number }[]> => {
+    return (await sql`SELECT id, source, has_videos FROM dramas WHERE duplicate_of = ${id}`) as {
+      id: string;
+      source: string | null;
+      has_videos: number;
+    }[];
+  })();
 }
 
 export const getPlatforms = cached("platforms", async (): Promise<{ platform: string; c: number }[]> => {
@@ -123,13 +131,6 @@ export async function getContinueWatching(
   limit = 8
 ): Promise<(DramaRow & { episode: number; position_seconds: number; duration_seconds: number | null })[]> {
   try {
-    await sql`CREATE TABLE IF NOT EXISTS watch_progress (
-      drama_id TEXT PRIMARY KEY,
-      episode INTEGER NOT NULL DEFAULT 1,
-      position_seconds DOUBLE PRECISION NOT NULL DEFAULT 0,
-      duration_seconds INTEGER,
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    )`;
     return (await sql`
       SELECT d.*, w.episode, w.position_seconds, w.duration_seconds
       FROM watch_progress w JOIN dramas d ON d.id = w.drama_id
@@ -523,6 +524,7 @@ export async function getTopImdb(limit: number, sort: TopImdbSort = "weighted"):
 
 /** Newest dramas added to the collection, optionally filtered by source. */
 export async function getNewArrivals(source: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
+  return cached(`newarr:${source}:${page}:${perPage}`, async (): Promise<{ dramas: DramaRow[]; total: number }> => {
   const cond = source === "all" ? "COALESCE(is_duplicate,0)=0" : "COALESCE(is_duplicate,0)=0 AND source=$1";
   const args = source === "all" ? [] : [source];
   const [dramas, countRows] = await Promise.all([
@@ -533,6 +535,7 @@ export async function getNewArrivals(source: string, page: number, perPage: numb
     sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE ${cond}`, args),
   ]);
   return { dramas: dramas as DramaRow[], total: Number((countRows as { c: string }[])[0]?.c ?? 0) };
+  })();
 }
 
 /* ---------- Saved lists: favourites + watch later ---------- */
@@ -648,6 +651,7 @@ export async function getRelatedDramas(
   actors: string[],
   limit = 12
 ): Promise<DramaRow[]> {
+  return cached(`related:${dramaId}:${limit}`, async (): Promise<DramaRow[]> => {
   try {
     const tags = Array.from(new Set([...genres, ...tropes]));
     if (tags.length === 0 && actors.length === 0) return [];
@@ -697,6 +701,7 @@ export async function getRelatedDramas(
   } catch {
     return [];
   }
+  })();
 }
 
 /** Fetch dramas by id list, preserving the requested order. Used for shared lists. */
@@ -731,6 +736,7 @@ export interface FilterOpts {
 /** Prime Video-style combinable filters over the full catalog. */
 export async function browseFiltered(opts: FilterOpts): Promise<{ dramas: DramaRow[]; total: number }> {
   const { q, genre, trope, platform, minRating, epRange, onlyWithVideos, sort, page, perPage } = opts;
+  return cached(`browsef:${q}|${genre}|${trope}|${platform}|${minRating}|${epRange ?? ""}|${onlyWithVideos ? 1 : 0}|${sort ?? ""}|${page}|${perPage}`, async (): Promise<{ dramas: DramaRow[]; total: number }> => {
   const params: (string | number)[] = [];
   const where: string[] = ["COALESCE(is_duplicate,0) = 0"];
 
@@ -775,6 +781,7 @@ export async function browseFiltered(opts: FilterOpts): Promise<{ dramas: DramaR
     sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE ${whereSql}`, params),
   ]);
   return { dramas: dramas as DramaRow[], total: Number((countRows as { c: string }[])[0]?.c ?? 0) };
+  })();
 }
 
 /** Hidden Gems: highly rated dramas few people have saved — quality without the hype. */

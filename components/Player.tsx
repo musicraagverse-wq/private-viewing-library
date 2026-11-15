@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
-import Hls from "hls.js";
+import type Hls from "hls.js";
 
 function fmt(s: number) {
   if (!isFinite(s) || s < 0) return "0:00";
@@ -93,21 +93,39 @@ export default function Player({
     setStarted(false);
 
     let hls: Hls | null = null;
+    let cancelled = false;
     const isHls = videoUrl.includes(".m3u8");
     // restore the user's last volume on every (re)mount
     video.volume = volume;
     video.muted = muted;
-    if (isHls && Hls.isSupported()) {
-      hls = new Hls({
-        maxBufferLength: 30,
-        maxMaxBufferLength: 60,
-        enableWorker: true,
-      });
-      hls.loadSource(videoUrl);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {});
-      });
+    if (isHls) {
+      // hls.js loads on demand only, keeping it out of the initial bundle
+      import("hls.js")
+        .then(({ default: Hls }) => {
+          if (cancelled) return;
+          if (Hls.isSupported()) {
+            hls = new Hls({
+              maxBufferLength: 30,
+              maxMaxBufferLength: 60,
+              enableWorker: true,
+            });
+            hls.loadSource(videoUrl);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              video.play().catch(() => {});
+            });
+          } else {
+            video.src = videoUrl;
+            video.load();
+            video.play().catch(() => {});
+          }
+        })
+        .catch(() => {
+          if (cancelled) return;
+          video.src = videoUrl;
+          video.load();
+          video.play().catch(() => {});
+        });
     } else {
       video.src = videoUrl;
       video.load();
@@ -115,6 +133,7 @@ export default function Player({
     }
     pokeControls();
     return () => {
+      cancelled = true;
       if (hideTimer.current) clearTimeout(hideTimer.current);
       hls?.destroy();
     };

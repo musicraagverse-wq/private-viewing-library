@@ -1,4 +1,4 @@
-import { browseFiltered, getGenres, getTropes, getPlatforms, pingDb, type FilterOpts } from "@/lib/db";
+import { browseFiltered, getGenres, getTropes, getPlatforms, type FilterOpts } from "@/lib/db";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import FilterPanel from "@/components/FilterPanel";
@@ -39,7 +39,6 @@ export default async function BrowsePage({
   let dbError = false;
 
   try {
-    await pingDb();
     const [result, g, t, p] = await Promise.all([
       browseFiltered(opts),
       getGenres(),

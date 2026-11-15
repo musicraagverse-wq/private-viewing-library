@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDrama, getProgress, pingDb, browseDramas } from "@/lib/db";
+import { getDrama, getProgress, browseDramas } from "@/lib/db";
 import { parseEpisodeUrls, dailymotionId } from "@/lib/types";
 import WatchClient from "./WatchClient";
 
@@ -12,7 +12,6 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
 
   let drama;
   try {
-    await pingDb();
     drama = await getDrama(id);
   } catch {
     return (

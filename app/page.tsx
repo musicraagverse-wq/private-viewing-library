@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { browseDramas, countDramas, getPlatforms, getContinueWatching, getGenres, getTropes, getTopImdb, getFeaturedDrama, getTrending, getFreshArrivals, getHiddenGems, pingDb, COLLECTIONS } from "@/lib/db";
+import { browseDramas, countDramas, getPlatforms, getContinueWatching, getGenres, getTropes, getTopImdb, getFeaturedDrama, getTrending, getFreshArrivals, getHiddenGems, COLLECTIONS } from "@/lib/db";
 import { MOODS } from "@/lib/moods";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
@@ -60,7 +60,6 @@ export default async function Home({
   let dbError = false;
 
   try {
-    await pingDb();
     [dramas, total, platforms, freshArrivals, genres, tropes, topImdb] = await Promise.all([
       browseDramas({ q, source: "", platform, page, perPage: PER_PAGE, onlyWithVideos, sort, epRange }),
       countDramas(q, "", platform, epRange),

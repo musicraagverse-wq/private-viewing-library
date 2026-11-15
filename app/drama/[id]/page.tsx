@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { getDrama, getProgress, pingDb, getRelatedDramas } from "@/lib/db";
+import { getDrama, getProgress, getRelatedDramas } from "@/lib/db";
 import { parseEpisodeUrls, dailymotionId } from "@/lib/types";
 import DramaCard from "@/components/DramaCard";
 import DramaHero from "@/components/DramaHero";
@@ -33,7 +33,6 @@ export default async function DramaDetail({ params }: { params: { id: string } }
   const id = decodeURIComponent(params.id);
   let drama;
   try {
-    await pingDb();
     drama = await getDrama(id);
   } catch {
     return (
