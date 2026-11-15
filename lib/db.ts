@@ -255,20 +255,24 @@ export async function browseByTrope(trope: string, page: number, perPage: number
 }
 
 export async function getMarathons(limit = 24): Promise<DramaRow[]> {
+  return cached(`marathons:${limit}`, async (): Promise<DramaRow[]> => {
   // Longest series (most episodes) — perfect for binge-watching
   return (await sql`
     SELECT ${sql.unsafe(CARD_COLS)} FROM dramas
     WHERE COALESCE(is_duplicate,0) = 0 AND has_videos = 1 AND episode_count > 0
     ORDER BY episode_count DESC LIMIT ${limit}
   `) as DramaRow[];
+  })();
 }
 
 export async function getFreshArrivals(limit = 24): Promise<DramaRow[]> {
+  return cached(`fresh:${limit}`, async (): Promise<DramaRow[]> => {
   return (await sql`
     SELECT ${sql.unsafe(CARD_COLS)} FROM dramas
     WHERE COALESCE(is_duplicate,0) = 0
     ORDER BY scraped_at DESC LIMIT ${limit}
   `) as DramaRow[];
+  })();
 }
 
 // Curated collections — unique groupings for the theater
@@ -401,6 +405,7 @@ function parseCast(raw: string | null): { actor: string; character: string; ncon
 
 /** All actors aggregated from cast_data, with drama counts + headshots. */
 export async function getArtists(): Promise<ArtistEntry[]> {
+  return cached("artists", async (): Promise<ArtistEntry[]> => {
   const rows = (await sql`
     SELECT cast_data FROM dramas
     WHERE COALESCE(is_duplicate,0) = 0 AND cast_data IS NOT NULL AND cast_data != ''
@@ -432,6 +437,7 @@ export async function getArtists(): Promise<ArtistEntry[]> {
       photo_url: photoMap.get(key) ?? null,
     }))
     .sort((a, b) => a.actor.localeCompare(b.actor));
+  })();
 }
 
 /** Headshot URL for an actor by name (used on the artist detail page). */
@@ -490,6 +496,7 @@ export interface TopImdbEntry {
 export type TopImdbSort = "weighted" | "rating" | "votes";
 
 export async function getTopImdb(limit: number, sort: TopImdbSort = "weighted"): Promise<TopImdbEntry[]> {
+  return cached(`topimdb:${limit}:${sort}`, async (): Promise<TopImdbEntry[]> => {
   try {
     const orderBy =
       sort === "rating"
@@ -511,6 +518,7 @@ export async function getTopImdb(limit: number, sort: TopImdbSort = "weighted"):
   } catch {
     return [];
   }
+  })();
 }
 
 /** Newest dramas added to the collection, optionally filtered by source. */
@@ -588,6 +596,7 @@ export async function getSavedDramas(
 
 /** Featured drama for the homepage hero: top-rated, watchable, with poster. Rotates by slot. */
 export async function getFeaturedDrama(slot = 0): Promise<DramaRow | null> {
+  return cached(`featured:${slot % 10}`, async (): Promise<DramaRow | null> => {
   try {
     const rows = (await sql`
       SELECT * FROM dramas
@@ -602,10 +611,12 @@ export async function getFeaturedDrama(slot = 0): Promise<DramaRow | null> {
   } catch {
     return null;
   }
+  })();
 }
 
 /** Trending: most-saved dramas (real popularity signal), newest saves first on ties. */
 export async function getTrending(limit = 12): Promise<DramaRow[]> {
+  return cached(`trending:${limit}`, async (): Promise<DramaRow[]> => {
   try {
     await ensureSavedTable();
     const rows = (await sql`
@@ -626,6 +637,7 @@ export async function getTrending(limit = 12): Promise<DramaRow[]> {
   } catch {
     return [];
   }
+  })();
 }
 
 /** Related dramas scored by shared genres, tropes, and cast. Real "More Like This". */
@@ -767,6 +779,7 @@ export async function browseFiltered(opts: FilterOpts): Promise<{ dramas: DramaR
 
 /** Hidden Gems: highly rated dramas few people have saved — quality without the hype. */
 export async function getHiddenGems(limit = 12): Promise<DramaRow[]> {
+  return cached(`gems:${limit}`, async (): Promise<DramaRow[]> => {
   try {
     await ensureSavedTable();
     const rows = (await sql`
@@ -781,4 +794,5 @@ export async function getHiddenGems(limit = 12): Promise<DramaRow[]> {
   } catch {
     return [];
   }
+  })();
 }
