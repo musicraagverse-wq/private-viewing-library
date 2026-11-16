@@ -706,7 +706,25 @@ export async function getRelatedDramas(
   return cached(`related:${dramaId}:${limit}`, async (): Promise<DramaRow[]> => {
   try {
     const tags = Array.from(new Set([...genres, ...tropes]));
-    if (tags.length === 0 && actors.length === 0) return [];
+    if (tags.length === 0 && actors.length === 0) {
+      // No tags or cast to match on (38% of the library is untagged) — fall
+      // back to the top IMDb-rated watchable dramas so the rail is never
+      // empty. Same ranking as /top-imdb (weighted rating, min 25 votes,
+      // max 5000 to exclude wrongly-mapped famous series).
+      try {
+        const rows = (await sql.query(
+          `SELECT ${CARD_COLS} FROM dramas
+           WHERE COALESCE(is_duplicate,0) = 0 AND id != $1
+             AND has_videos = 1 AND imdb_wr IS NOT NULL
+             AND imdb_votes >= 25 AND imdb_votes <= 5000
+           ORDER BY imdb_wr DESC LIMIT $2`,
+          [dramaId, limit]
+        )) as DramaRow[];
+        return rows;
+      } catch {
+        return [];
+      }
+    }
     // Candidate pool: dramas sharing at least one genre/trope tag (JSON text match)
     const likeConds = tags.map((_, i) => `(genres LIKE $${i + 2} OR tropes LIKE $${i + 2})`);
     const tagParams = tags.map((t) => `%"${t}"%`);
