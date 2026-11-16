@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { getDrama, getProgress, getRelatedDramas } from "@/lib/db";
+import { getDrama, getProgress, getRelatedDramas, getWatchedEpisodes } from "@/lib/db";
 import { canonicalizeTagList } from "@/lib/tag-mapping";
 import { parseEpisodeUrls, parseEpisodeIds, dailymotionId } from "@/lib/types";
 import { isResolvableSource } from "@/lib/stream";
@@ -58,6 +58,10 @@ export default async function DramaDetail({ params }: { params: { id: string } }
     : urls.length || drama.episode_count || 0;
   const progress = await getProgress(drama.id);
   const resumeEp = progress ? progress.episode : 1;
+  let watched: number[] = [];
+  try {
+    watched = await getWatchedEpisodes(drama.id);
+  } catch {}
   const dm = dailymotionId(drama.alt_source);
 
   // Cast from IMDB mapping
@@ -122,6 +126,11 @@ export default async function DramaDetail({ params }: { params: { id: string } }
         upNext={related.slice(0, 6).map((d: any) => ({ id: d.id, title: d.title, poster_url: d.poster_url }))}
         source={drama.source}
         episodeIds={resolvable ? episodeIds : null}
+        synopsis={drama.synopsis}
+        genres={canonGenres.map((t) => t.canonical)}
+        tropes={canonTropes.map((t) => t.canonical)}
+        cast={cast}
+        watchedEpisodes={watched}
       />
 
       {/* Synopsis */}

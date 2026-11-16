@@ -14,6 +14,9 @@ const Player = dynamic(() => import("@/components/Player"), {
 });
 import { Poster } from "@/components/DramaCard";
 import PlatformMark from "@/components/PlatformMark";
+import EpisodeGrid from "@/components/EpisodeGrid";
+import FavoriteButton from "@/components/FavoriteButton";
+import ShareRow from "@/components/ShareRow";
 import RatingButtons from "@/components/RatingButtons";
 import StreamErrorCard from "@/components/StreamErrorCard";
 import { isResolvableSource } from "@/lib/stream";
@@ -35,6 +38,11 @@ export default function DramaHero({
   upNext,
   source,
   episodeIds,
+  synopsis,
+  genres,
+  tropes,
+  cast,
+  watchedEpisodes,
 }: {
   dramaId: string;
   title: string;
@@ -51,10 +59,23 @@ export default function DramaHero({
   source: string | null;
   /** Parsed episode_ids map, or null when the row has none. */
   episodeIds: Record<string, number> | null;
+  /** Synopsis for the watch sidebar. */
+  synopsis: string | null;
+  /** Canonical genre/trope labels for the watch sidebar. */
+  genres: string[];
+  tropes: string[];
+  /** Cast for the watch sidebar. */
+  cast: { actor: string; character: string | null }[];
+  /** Episodes the user has watched (checkmarks), from watch_progress. */
+  watchedEpisodes: number[];
 }) {
   const [watching, setWatching] = useState(false);
   const [episode, setEpisode] = useState(resumeEp);
   const [showUpNext, setShowUpNext] = useState(false);
+  // Autoplay next episode: persisted, default ON (same key as the watch page).
+  const [autoplay, setAutoplay] = useState<boolean>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("sd_autoplay_next") !== "0" : true
+  );
 
   // Resolvable rows: episode count from the map, fresh stream per episode.
   const resolvable =
@@ -74,13 +95,24 @@ export default function DramaHero({
   }, []);
 
   const onEnded = useCallback(() => {
-    if (!isLastEp && totalEps > 0) {
+    if (isLastEp) {
+      setShowUpNext(true);
+    } else if (autoplay && totalEps > 0) {
       setEpisode((e) => e + 1);
       setShowUpNext(false);
-    } else if (isLastEp) {
-      setShowUpNext(true);
     }
-  }, [isLastEp, totalEps]);
+    // Autoplay off: the video simply stops at the end.
+  }, [isLastEp, totalEps, autoplay]);
+
+  function toggleAutoplay() {
+    setAutoplay((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("sd_autoplay_next", next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }
 
   const onNavigate = useCallback((ep: number) => {
     setEpisode(ep);
@@ -148,10 +180,10 @@ export default function DramaHero({
 
   // ---------- Watch mode: embedded player + episode grid (EveryDrama style) ----------
   if (watching) {
-    const gridCount = totalEps > 0 ? totalEps : episode;
+    const tags = [...genres, ...tropes];
     return (
       <section className="animate-fade-up rounded-lg border border-border bg-surface p-6">
-        <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_400px]">
           <div className="min-w-0">
             {showUpNext ? (
               <div className="w-full select-none overflow-hidden rounded-xl bg-black p-6">
@@ -223,20 +255,75 @@ export default function DramaHero({
                 Next ›
               </button>
             </div>
-            <div className="grid grid-cols-6 gap-2">
-              {Array.from({ length: gridCount }, (_, i) => i + 1).map((ep) => (
-                <button
-                  key={ep}
-                  onClick={() => onNavigate(ep)}
-                  className={`rounded-lg border py-2.5 text-sm font-bold transition ${
-                    ep === episode
-                      ? "border-primary bg-primary text-black"
-                      : "border-border bg-surface text-text hover:border-primary"
-                  }`}
-                >
-                  {ep}
-                </button>
-              ))}
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {tags.map((t) => (
+                  <span
+                    key={t}
+                    className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold text-muted"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {synopsis && (
+              <p className="text-sm leading-relaxed text-text/90">{synopsis}</p>
+            )}
+
+            <FavoriteButton dramaId={dramaId} />
+            <ShareRow dramaId={dramaId} title={title} />
+
+            {cast.length > 0 && (
+              <div className="border-t border-border pt-4">
+                <h2 className="text-base font-extrabold text-text">Cast</h2>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {cast.map((c, i) => (
+                    <Link
+                      key={i}
+                      href={`/actor/${encodeURIComponent(c.actor)}`}
+                      className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs transition-colors hover:border-primary hover:text-primary"
+                    >
+                      <span className="font-semibold">{c.actor}</span>
+                      {c.character && <span className="text-muted"> as {c.character}</span>}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="border-t border-border pt-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-base font-extrabold text-text">All Episodes</h2>
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-muted">
+                  Autoplay next
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={autoplay}
+                    aria-label="Autoplay next episode"
+                    onClick={toggleAutoplay}
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition ${
+                      autoplay ? "bg-primary" : "bg-border"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all ${
+                        autoplay ? "left-[22px]" : "left-0.5"
+                      }`}
+                    />
+                  </button>
+                </label>
+              </div>
+              <div className="mt-3">
+                <EpisodeGrid
+                  episode={episode}
+                  totalEps={totalEps}
+                  watched={watchedEpisodes}
+                  onNavigate={onNavigate}
+                />
+              </div>
             </div>
           </aside>
         </div>
