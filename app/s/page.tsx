@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getDramasByIds } from "@/lib/db";
+import { getDramasByIds, hideDailymotion } from "@/lib/db";
 import DramaCard from "@/components/DramaCard";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export default async function SharedListPage({
   searchParams: { d?: string };
 }) {
   const ids = (searchParams.d ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  const dramas = await getDramasByIds(ids);
+  const dramas = await getDramasByIds(ids, hideDailymotion());
 
   return (
     <div className="space-y-6">

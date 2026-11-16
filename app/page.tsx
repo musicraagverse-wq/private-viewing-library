@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { browseDramas, countDramas, getPlatforms, getContinueWatching, getGenres, getTropes, getTopImdb, getFeaturedDrama, getTrending, getFreshArrivals, getHiddenGems, COLLECTIONS } from "@/lib/db";
+import { browseDramas, countDramas, getPlatforms, getContinueWatching, getGenres, getTropes, getTopImdb, getFeaturedDrama, getTrending, getFreshArrivals, getHiddenGems, hideDailymotion, COLLECTIONS } from "@/lib/db";
 import { MOODS } from "@/lib/moods";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
@@ -46,6 +46,7 @@ export default async function Home({
   const epRange = (["short", "medium", "long"] as const).includes(searchParams.ep as any)
     ? (searchParams.ep as "short" | "medium" | "long")
     : "";
+  const hideDm = hideDailymotion();
 
   let dramas: Awaited<ReturnType<typeof browseDramas>> = [];
   let total = 0;
@@ -62,21 +63,21 @@ export default async function Home({
 
   try {
     [dramas, total, platforms, freshArrivals, genres, tropes, topImdb] = await Promise.all([
-      browseDramas({ q, source: "", platform, page, perPage: PER_PAGE, onlyWithVideos, sort, epRange }),
-      countDramas(q, "", platform, epRange),
-      getPlatforms(),
-      getFreshArrivals(12),
-      getGenres(),
-      getTropes(),
-      getTopImdb(50),
+      browseDramas({ q, source: "", platform, page, perPage: PER_PAGE, onlyWithVideos, sort, epRange, hideDm }),
+      countDramas(q, "", platform, epRange, hideDm),
+      getPlatforms(hideDm),
+      getFreshArrivals(12, hideDm),
+      getGenres(hideDm),
+      getTropes(hideDm),
+      getTopImdb(50, "weighted", hideDm),
     ]);
     if (!q && !platform && page === 1) {
       // Independent sections — one failing query must not kill the others.
       const [cw, tr, ft, hg] = await Promise.allSettled([
-        getContinueWatching(10),
-        getTrending(12),
+        getContinueWatching(10, hideDm),
+        getTrending(12, hideDm),
         getFeaturedDrama(rotationSlot()),
-        getHiddenGems(12),
+        getHiddenGems(12, hideDm),
       ]);
       continueWatching = cw.status === "fulfilled" ? cw.value : [];
       trending = tr.status === "fulfilled" ? tr.value : [];

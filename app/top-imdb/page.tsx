@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getTopImdb, type TopImdbSort } from "@/lib/db";
+import { getTopImdb, hideDailymotion, type TopImdbSort } from "@/lib/db";
 import { Poster } from "@/components/DramaCard";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ export default async function TopImdbPage({
     ? (searchParams!.sort as TopImdbSort)
     : "weighted";
   const active = SORTS.find((s) => s.key === sort)!;
-  const list = await getTopImdb(n, sort);
+  const list = await getTopImdb(n, sort, hideDailymotion());
 
   return (
     <div>

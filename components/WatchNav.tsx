@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { MAIN_LINKS, EXPLORE_LINKS, HeartIcon, BookmarkIcon } from "@/components/SiteNav";
 import { LogoutMenuItem } from "@/components/LogoutButton";
+import HideDmToggle from "@/components/HideDmToggle";
 
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
@@ -152,6 +153,10 @@ export default function WatchNav({ loggedIn }: { loggedIn: boolean }) {
               className="w-full rounded-full border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-muted focus:border-primary focus:outline-none"
             />
           </form>
+
+          <div className="border-b border-border px-1 pb-3">
+            <HideDmToggle />
+          </div>
 
           {MAIN_LINKS.map((l) => (
             <Link key={l.href + l.label} href={l.href} onClick={go} className={linkCls(l.href)}>

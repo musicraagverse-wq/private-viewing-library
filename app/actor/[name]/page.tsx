@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { browseByArtist, getArtistPhoto } from "@/lib/db";
+import { browseByArtist, getArtistPhoto, hideDailymotion } from "@/lib/db";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 
@@ -24,7 +24,7 @@ export default async function ArtistPage({
   const actor = decodeURIComponent(params.name);
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
   const [{ dramas, total }, photo] = await Promise.all([
-    browseByArtist(actor, page, PER_PAGE),
+    browseByArtist(actor, page, PER_PAGE, hideDailymotion()),
     getArtistPhoto(actor),
   ]);
 

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import LogoutButton, { LogoutMenuItem } from "./LogoutButton";
+import HideDmToggle from "./HideDmToggle";
 
 export const MAIN_LINKS = [
   { href: "/", label: "Home" },
@@ -384,6 +385,7 @@ export default function SiteNav({ loggedIn }: { loggedIn: boolean }) {
         {/* Utility area */}
         <div className="ml-auto hidden items-center gap-1 md:flex">
           <SearchBox />
+          <HideDmToggle />
           {utilLink("/favourites", "Favourites", HeartIcon)}
           {utilLink("/watch-later", "Watch Later", BookmarkIcon)}
           {loggedIn ? (
@@ -411,6 +413,9 @@ export default function SiteNav({ loggedIn }: { loggedIn: boolean }) {
         <nav aria-label="Mobile" className="border-t border-border bg-bg px-4 pb-6 pt-2 md:hidden">
           <div className="py-2" onSubmit={() => setOpen(false)}>
             <SearchBox onSubmit={() => setOpen(false)} />
+          </div>
+          <div className="border-b border-border py-3">
+            <HideDmToggle />
           </div>
           <ul className="divide-y divide-border">
             {MAIN_LINKS.map((l) => {

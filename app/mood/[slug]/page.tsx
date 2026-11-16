@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { browseByTropes } from "@/lib/db";
+import { browseByTropes, hideDailymotion } from "@/lib/db";
 import { MOODS, getMood } from "@/lib/moods";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
@@ -21,7 +21,7 @@ export default async function MoodPage({
   if (!mood) notFound();
 
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
-  const { dramas, total } = await browseByTropes(mood.tropes, page, PER_PAGE, "rating");
+  const { dramas, total } = await browseByTropes(mood.tropes, page, PER_PAGE, "rating", hideDailymotion());
 
   return (
     <div className="space-y-6">

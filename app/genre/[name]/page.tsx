@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { browseByGenre } from "@/lib/db";
+import { browseByGenre, hideDailymotion } from "@/lib/db";
 import { resolveTag, TAG_HOME } from "@/lib/tag-mapping";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
@@ -23,7 +23,7 @@ export default async function GenrePage({
   if (!resolved) notFound();
   const genre = resolved.canonical;
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
-  const { dramas, total } = await browseByGenre(genre, page, PER_PAGE);
+  const { dramas, total } = await browseByGenre(genre, page, PER_PAGE, hideDailymotion());
 
   // Unknown labels with no dramas 404; known catalogue labels with no
   // dramas yet (e.g. new VerticalShorts labels) show an empty state.

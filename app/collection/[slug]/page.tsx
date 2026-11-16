@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { browseCollection, COLLECTIONS } from "@/lib/db";
+import { browseCollection, hideDailymotion, COLLECTIONS } from "@/lib/db";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 
@@ -20,7 +20,7 @@ export default async function CollectionPage({
   if (!collection) notFound();
 
   const page = Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1);
-  const { dramas, total } = await browseCollection(slug, page, PER_PAGE);
+  const { dramas, total } = await browseCollection(slug, page, PER_PAGE, hideDailymotion());
 
   return (
     <div className="space-y-6">

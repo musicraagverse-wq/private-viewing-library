@@ -19,8 +19,9 @@ import FavoriteButton from "@/components/FavoriteButton";
 import ShareRow from "@/components/ShareRow";
 import RatingButtons from "@/components/RatingButtons";
 import StreamErrorCard from "@/components/StreamErrorCard";
-import { isResolvableSource } from "@/lib/stream";
+import HideDmToggle from "@/components/HideDmToggle";
 import { useResolvedStream } from "@/lib/use-resolved-stream";
+import { isResolvableSource } from "@/lib/stream";
 
 type UpNextItem = { id: string; title: string; poster_url: string | null };
 
@@ -35,6 +36,7 @@ export default function DramaHero({
   hasProgress,
   resumeSeconds,
   dailymotionId,
+  dmHidden,
   upNext,
   source,
   episodeIds,
@@ -54,6 +56,9 @@ export default function DramaHero({
   hasProgress: boolean;
   resumeSeconds: number;
   dailymotionId: string | null;
+  /** True when this drama is Dailymotion-only and the user turned on
+   *  "Hide Dailymotion" — the redirect is suppressed, not offered. */
+  dmHidden?: boolean;
   upNext: UpNextItem[];
   /** Row source; resolvable rows fetch a fresh stream at watch time. */
   source: string | null;
@@ -143,7 +148,17 @@ export default function DramaHero({
     />
   ) : (
     <div className="rounded-xl bg-card p-10 text-center">
-      <p className="text-lg font-extrabold text-text">No video available yet</p>
+      {dmHidden ? (
+        <>
+          <p className="text-lg font-extrabold text-text">Only on Dailymotion</p>
+          <p className="mt-2 text-sm font-semibold text-muted">Hidden by your Dailymotion filter — turn it off to watch here.</p>
+          <div className="mt-4 flex justify-center">
+            <HideDmToggle />
+          </div>
+        </>
+      ) : (
+        <p className="text-lg font-extrabold text-text">No video available yet</p>
+      )}
     </div>
   );
 
@@ -375,6 +390,15 @@ export default function DramaHero({
                 >
                   ▶ {hasProgress ? `Resume EP ${resumeEp}` : "Watch All Episodes"}
                 </button>
+              ) : dmHidden ? (
+                <div className="space-y-3">
+                  <span className="inline-block rounded-full border border-white/25 bg-white/5 px-8 py-3 text-sm font-semibold text-white/70">
+                    Only on Dailymotion — hidden by your filter
+                  </span>
+                  <div className="flex justify-center">
+                    <HideDmToggle />
+                  </div>
+                </div>
               ) : dailymotionId ? (
                 <a
                   href={`https://www.dailymotion.com/video/${dailymotionId}`}

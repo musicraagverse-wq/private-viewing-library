@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { browseDramas } from "@/lib/db";
+import { browseDramas, hideDailymotion } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get("q") ?? "").trim();
   if (q.length < 2) return NextResponse.json({ results: [] });
   try {
-    const dramas = await browseDramas({ q, source: "", platform: "", page: 1, perPage: 6, onlyWithVideos: false });
+    const dramas = await browseDramas({ q, source: "", platform: "", page: 1, perPage: 6, onlyWithVideos: false, hideDm: hideDailymotion() });
     return NextResponse.json({
       results: dramas.map((d) => ({
         id: d.id,

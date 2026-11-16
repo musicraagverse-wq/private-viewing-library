@@ -13,6 +13,7 @@ import PlatformMark from "@/components/PlatformMark";
 import EpisodeGrid from "@/components/EpisodeGrid";
 import FavoriteButton from "@/components/FavoriteButton";
 import ShareRow from "@/components/ShareRow";
+import HideDmToggle from "@/components/HideDmToggle";
 
 type UpNextItem = { id: string; title: string; poster_url: string | null };
 
@@ -25,6 +26,7 @@ export default function WatchClient({
   totalEps,
   videoUrl,
   dailymotionEmbed,
+  dmHidden,
   resumeAt,
   upNext,
   source,
@@ -44,6 +46,9 @@ export default function WatchClient({
   totalEps: number;
   videoUrl: string | null;
   dailymotionEmbed: string | null;
+  /** True when this drama is Dailymotion-only and the user turned on
+   *  "Hide Dailymotion" — the redirect is suppressed, not offered. */
+  dmHidden?: boolean;
   resumeAt: number;
   upNext: UpNextItem[];
   /** Row source; resolvable rows fetch a fresh stream at watch time. */
@@ -109,6 +114,14 @@ export default function WatchClient({
   // Legacy path: stored URLs / Dailymotion — unchanged for all 88k legacy rows.
   const legacyArea = videoUrl ? (
     <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} onTheaterChange={setTheater} fullWidthBar />
+  ) : dmHidden ? (
+    <div className="rounded-xl bg-card p-10 text-center">
+      <p className="text-lg font-extrabold text-text">Only on Dailymotion</p>
+      <p className="mt-2 text-sm font-semibold text-muted">Hidden by your Dailymotion filter — turn it off to watch here.</p>
+      <div className="mt-4 flex justify-center">
+        <HideDmToggle />
+      </div>
+    </div>
   ) : dailymotionEmbed ? (
     <div className="rounded-xl bg-card p-10 text-center">
       <div className="text-4xl mb-4">🎬</div>

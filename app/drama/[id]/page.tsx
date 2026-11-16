@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
-import { getDrama, getProgress, getRelatedDramas, getWatchedEpisodes } from "@/lib/db";
+import { getDrama, getProgress, getRelatedDramas, getWatchedEpisodes, hideDailymotion } from "@/lib/db";
 import { canonicalizeTagList } from "@/lib/tag-mapping";
 import { parseEpisodeUrls, parseEpisodeIds, dailymotionId } from "@/lib/types";
 import { isResolvableSource } from "@/lib/stream";
@@ -63,6 +63,10 @@ export default async function DramaDetail({ params }: { params: { id: string } }
     watched = await getWatchedEpisodes(drama.id);
   } catch {}
   const dm = dailymotionId(drama.alt_source);
+  // Hide Dailymotion toggle: when on, a Dailymotion-only drama shows a
+  // "hidden by your filter" note instead of the redirect button.
+  const hideDm = hideDailymotion();
+  const dmHidden = hideDm && !!dm;
 
   // Cast from IMDB mapping
   let cast: { actor: string; character: string }[] = [];
@@ -103,7 +107,8 @@ export default async function DramaDetail({ params }: { params: { id: string } }
       canonGenres.map((t) => t.canonical),
       canonTropes.map((t) => t.canonical),
       cast.map((c) => c.actor).filter(Boolean),
-      12
+      12,
+      hideDm
     );
   } catch {}
 
@@ -122,7 +127,8 @@ export default async function DramaDetail({ params }: { params: { id: string } }
         resumeEp={resumeEp}
         hasProgress={!!progress}
         resumeSeconds={progress && progress.episode === resumeEp ? progress.position_seconds : 0}
-        dailymotionId={dm}
+        dailymotionId={dmHidden ? null : dm}
+        dmHidden={dmHidden}
         upNext={related.slice(0, 6).map((d: any) => ({ id: d.id, title: d.title, poster_url: d.poster_url }))}
         source={drama.source}
         episodeIds={resolvable ? episodeIds : null}

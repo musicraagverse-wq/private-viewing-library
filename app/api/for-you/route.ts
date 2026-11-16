@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { browseByTropes, getRelatedDramas, getDrama } from "@/lib/db";
+import { browseByTropes, getRelatedDramas, getDrama, hideDailymotion } from "@/lib/db";
 import type { DramaRow } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +39,7 @@ export async function POST(req: NextRequest) {
 
     const rows: ForYouRow[] = [];
     const seen = new Set<string>();
+    const hideDm = hideDailymotion();
 
     const pushRow = (title: string, dramas: DramaRow[], subtitle?: string) => {
       const fresh = dramas.filter((d) => !seen.has(d.id) && !disliked.has(d.id)).slice(0, 12);
@@ -60,7 +61,8 @@ export async function POST(req: NextRequest) {
           parseList((drama as any).genres),
           parseList((drama as any).tropes),
           cast.map((c) => c.actor).filter(Boolean),
-          12
+          12,
+          hideDm
         );
         if (related.length >= 4) {
           pushRow(`Because you liked ${drama.title}`, related);
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
     // 2. Because you love [trope] — top-rated dramas per taste trope
     for (const trope of taste.slice(0, 3)) {
       try {
-        const { dramas } = await browseByTropes([trope], 1, 12, "rating");
+        const { dramas } = await browseByTropes([trope], 1, 12, "rating", hideDm);
         pushRow(`Because you love ${trope}`, dramas, "Top-rated picks in this trope");
       } catch {}
       if (rows.length >= 4) break;

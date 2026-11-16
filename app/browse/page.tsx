@@ -1,4 +1,4 @@
-import { browseFiltered, getGenres, getTropes, getPlatforms, type FilterOpts } from "@/lib/db";
+import { browseFiltered, getGenres, getTropes, getPlatforms, hideDailymotion, type FilterOpts } from "@/lib/db";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 import FilterPanel from "@/components/FilterPanel";
@@ -29,6 +29,7 @@ export default async function BrowsePage({
     sort: (["newest", "rating", "az", "za"] as const).includes(searchParams.sort as any) ? (searchParams.sort as FilterOpts["sort"]) : "newest",
     page: Math.max(1, parseInt(searchParams.page ?? "1", 10) || 1),
     perPage: PER_PAGE,
+    hideDm: hideDailymotion(),
   };
 
   let dramas: Awaited<ReturnType<typeof browseFiltered>>["dramas"] = [];
@@ -41,9 +42,9 @@ export default async function BrowsePage({
   try {
     const [result, g, t, p] = await Promise.all([
       browseFiltered(opts),
-      getGenres(),
-      getTropes(),
-      getPlatforms(),
+      getGenres(opts.hideDm ?? false),
+      getTropes(opts.hideDm ?? false),
+      getPlatforms(opts.hideDm ?? false),
     ]);
     dramas = result.dramas;
     total = result.total;

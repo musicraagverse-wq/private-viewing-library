@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getGenres, getTropes, getPlatforms, COLLECTIONS } from "@/lib/db";
+import { getGenres, getTropes, getPlatforms, hideDailymotion, COLLECTIONS } from "@/lib/db";
 import { CANONICAL_GENRES, CANONICAL_TROPES } from "@/lib/tag-mapping";
 import { platformLogo, platformInitial, formatPlatform, sortPlatforms } from "@/lib/platforms";
 import { genreIcon, tropeIcon } from "@/lib/tag-icons";
@@ -10,10 +10,11 @@ const chip =
   "rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-text hover:border-primary hover:text-primary";
 
 export default async function ExplorePage() {
+  const hideDm = hideDailymotion();
   const [genres, tropes, platforms] = await Promise.all([
-    getGenres(),
-    getTropes(),
-    getPlatforms(),
+    getGenres(hideDm),
+    getTropes(hideDm),
+    getPlatforms(hideDm),
   ]);
   // Canonical labels with no dramas yet (e.g. new VerticalShorts labels)
   // are part of the catalogue — shown unlinked, with a zero count.

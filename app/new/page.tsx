@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getNewArrivals } from "@/lib/db";
+import { getNewArrivals, hideDailymotion } from "@/lib/db";
 import DramaCard from "@/components/DramaCard";
 import Pagination from "@/components/Pagination";
 
@@ -17,7 +17,7 @@ export default async function NewArrivalsPage({
   const tab = (TABS as readonly string[]).includes(source) ? source : "all";
   const page = Math.max(1, parseInt(searchParams?.page ?? "1", 10) || 1);
 
-  const { dramas, total } = await getNewArrivals(tab, page, PER_PAGE);
+  const { dramas, total } = await getNewArrivals(tab, page, PER_PAGE, hideDailymotion());
 
   const hrefWith = (s: string, p: number) => `/new?source=${s}&page=${p}`;
 

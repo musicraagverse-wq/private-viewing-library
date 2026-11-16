@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getDrama, getProgress, getWatchedEpisodes, browseDramas } from "@/lib/db";
+import { getDrama, getProgress, getWatchedEpisodes, browseDramas, hideDailymotion } from "@/lib/db";
 import { canonicalizeTagList } from "@/lib/tag-mapping";
 import { parseEpisodeUrls, parseEpisodeIds, dailymotionId } from "@/lib/types";
 import { isResolvableSource } from "@/lib/stream";
@@ -35,6 +35,10 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
     : urls.length || drama.episode_count || 0;
   const videoUrl = resolvable ? null : ep >= 1 && ep <= urls.length ? urls[ep - 1] : null;
   const dm = !videoUrl ? dailymotionId(drama.alt_source) : null;
+  // Hide Dailymotion toggle: when on, a Dailymotion-only drama shows a
+  // "hidden by your filter" card instead of the redirect.
+  const hideDm = hideDailymotion();
+  const dmHidden = hideDm && !!dm;
   const progress = await getProgress(drama.id);
   const resumeAt = progress && progress.episode === ep ? progress.position_seconds : 0;
   const watchedEpisodes = await getWatchedEpisodes(drama.id);
@@ -76,6 +80,7 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
       page: 1,
       perPage: 7,
       onlyWithVideos: true,
+      hideDm,
     });
     upNext = recs
       .filter((r) => r.id !== drama.id)
@@ -96,7 +101,7 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
   try {
     const { getRelatedDramas } = await import("@/lib/db");
     const actorNames = cast.map((c) => c.actor).filter(Boolean);
-    const rel = await getRelatedDramas(drama.id, canonGenreNames, canonTropeNames, actorNames, 8);
+    const rel = await getRelatedDramas(drama.id, canonGenreNames, canonTropeNames, actorNames, 8, hideDm);
     related = rel.map((r) => ({ id: r.id, title: r.title, poster_url: r.poster_url ?? null }));
   } catch {
     related = [];
@@ -114,7 +119,8 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
         episode={ep}
         totalEps={totalEps}
         videoUrl={videoUrl}
-        dailymotionEmbed={dm ? `https://www.dailymotion.com/embed/video/${dm}` : null}
+        dailymotionEmbed={dmHidden ? null : dm ? `https://www.dailymotion.com/embed/video/${dm}` : null}
+        dmHidden={dmHidden}
         resumeAt={resumeAt}
         upNext={upNext}
         source={drama.source}

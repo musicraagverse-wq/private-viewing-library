@@ -1,9 +1,25 @@
 import { neon } from "@neondatabase/serverless";
 import { unstable_cache } from "next/cache";
+import { cookies } from "next/headers";
 import type { DramaRow, WatchProgress } from "./types";
 import { resolveTag, rawLabelsFor } from "./tag-mapping";
 
 const sql = neon(process.env.DATABASE_URL!);
+
+/** True when the user turned on "Hide Dailymotion" (cookie sd_hide_dm=1).
+ *  The toggle is off by default; turning it on hides every drama whose
+ *  only video is a Dailymotion redirect, turning it off shows all again. */
+export function hideDailymotion(): boolean {
+  try {
+    return cookies().get("sd_hide_dm")?.value === "1";
+  } catch {
+    return false;
+  }
+}
+
+/** SQL fragment excluding Dailymotion-only dramas (alt_source is the
+ *  Dailymotion fallback id; those rows have no playable direct video). */
+const NO_DM = `(alt_source IS NULL OR alt_source NOT LIKE 'dailymotion:%')`;
 
 /** Cache for heavy taxonomy aggregations — recomputed at most once an hour. */
 function cached<T>(key: string, fn: () => Promise<T>): () => Promise<T> {
@@ -20,9 +36,11 @@ function buildWhere(
   platform: string,
   onlyWithVideos: boolean,
   params: (string | number)[],
-  epRange?: "" | "short" | "medium" | "long"
+  epRange?: "" | "short" | "medium" | "long",
+  hideDm = false
 ): string {
   const where: string[] = ["COALESCE(is_duplicate,0) = 0"];
+  if (hideDm) where.push(NO_DM);
   if (q) {
     params.push(`%${q}%`, `%${q}%`, `%${q}%`);
     where.push(
@@ -55,11 +73,12 @@ export async function countDramas(
   q: string,
   source: string,
   platform: string,
-  epRange?: "" | "short" | "medium" | "long"
+  epRange?: "" | "short" | "medium" | "long",
+  hideDm = false
 ): Promise<number> {
-  return cached(`count:${q}|${source}|${platform}|${epRange ?? ""}`, async (): Promise<number> => {
+  return cached(`count:${q}|${source}|${platform}|${epRange ?? ""}|${hideDm ? 1 : 0}`, async (): Promise<number> => {
   const params: (string | number)[] = [];
-  const where = buildWhere(q, source, platform, false, params, epRange);
+  const where = buildWhere(q, source, platform, false, params, epRange, hideDm);
   const rows = await sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE ${where}`, params);
   return Number((rows as { c: string }[])[0]?.c ?? 0);
   })();
@@ -74,13 +93,14 @@ export interface BrowseOpts {
   onlyWithVideos: boolean;
   sort?: "newest" | "rating";
   epRange?: "" | "short" | "medium" | "long";
+  hideDm?: boolean;
 }
 
 export async function browseDramas(opts: BrowseOpts): Promise<DramaRow[]> {
-  const { q, source, platform, page, perPage, onlyWithVideos, sort, epRange } = opts;
-  return cached(`browse:${q}|${source}|${platform}|${page}|${perPage}|${onlyWithVideos ? 1 : 0}|${sort ?? ""}|${epRange ?? ""}`, async (): Promise<DramaRow[]> => {
+  const { q, source, platform, page, perPage, onlyWithVideos, sort, epRange, hideDm = false } = opts;
+  return cached(`browse:${q}|${source}|${platform}|${page}|${perPage}|${onlyWithVideos ? 1 : 0}|${sort ?? ""}|${epRange ?? ""}|${hideDm ? 1 : 0}`, async (): Promise<DramaRow[]> => {
   const params: (string | number)[] = [];
-  const where = buildWhere(q, source, platform, onlyWithVideos, params, epRange);
+  const where = buildWhere(q, source, platform, onlyWithVideos, params, epRange, hideDm);
   const offset = (page - 1) * perPage;
   params.push(perPage, offset);
   const limitPh = params.length - 1;
@@ -112,13 +132,17 @@ export async function getDuplicatesOf(
   })();
 }
 
-export const getPlatforms = cached("platforms", async (): Promise<{ platform: string; c: number }[]> => {
-  return (await sql`
-    SELECT platform, COUNT(*) AS c FROM dramas
-    WHERE COALESCE(is_duplicate,0) = 0 AND platform IS NOT NULL AND platform != ''
-    GROUP BY platform ORDER BY c DESC
-  `) as { platform: string; c: number }[];
-});
+export async function getPlatforms(hideDm = false): Promise<{ platform: string; c: number }[]> {
+  return cached(`platforms:${hideDm ? 1 : 0}`, async (): Promise<{ platform: string; c: number }[]> => {
+  const where = hideDm
+    ? `COALESCE(is_duplicate,0) = 0 AND platform IS NOT NULL AND platform != '' AND ${NO_DM}`
+    : `COALESCE(is_duplicate,0) = 0 AND platform IS NOT NULL AND platform != ''`;
+  return (await sql.query(
+    `SELECT platform, COUNT(*) AS c FROM dramas WHERE ${where} GROUP BY platform ORDER BY c DESC`,
+    []
+  )) as { platform: string; c: number }[];
+  })();
+}
 
 export async function getSources(): Promise<{ source: string; c: number }[]> {
   return (await sql`
@@ -129,14 +153,17 @@ export async function getSources(): Promise<{ source: string; c: number }[]> {
 }
 
 export async function getContinueWatching(
-  limit = 8
+  limit = 8,
+  hideDm = false
 ): Promise<(DramaRow & { episode: number; position_seconds: number; duration_seconds: number | null })[]> {
   try {
-    return (await sql`
-      SELECT d.*, w.episode, w.position_seconds, w.duration_seconds
-      FROM watch_progress w JOIN dramas d ON d.id = w.drama_id
-      ORDER BY w.updated_at DESC LIMIT ${limit}
-    `) as (DramaRow & { episode: number; position_seconds: number; duration_seconds: number | null })[];
+    const where = hideDm ? `WHERE (d.alt_source IS NULL OR d.alt_source NOT LIKE 'dailymotion:%')` : "";
+    return (await sql.query(
+      `SELECT d.*, w.episode, w.position_seconds, w.duration_seconds
+       FROM watch_progress w JOIN dramas d ON d.id = w.drama_id
+       ${where} ORDER BY w.updated_at DESC LIMIT $1`,
+      [limit]
+    )) as (DramaRow & { episode: number; position_seconds: number; duration_seconds: number | null })[];
   } catch {
     return [];
   }
@@ -213,16 +240,21 @@ export async function getStats(): Promise<{ total: number; withVideos: number; w
  * concept split across both columns counts once per drama, under its home).
  * Counts are drama counts, not occurrences.
  */
-const getTagCounts = cached("tag-counts", async (): Promise<{
+async function getTagCounts(hideDm = false): Promise<{
   genres: { genre: string; c: number }[];
   tropes: { trope: string; c: number }[];
-}> => {
-  const rows = (await sql`
-    SELECT genres, tropes FROM dramas
-    WHERE COALESCE(is_duplicate,0) = 0
-      AND ((genres IS NOT NULL AND genres != '')
-        OR (tropes IS NOT NULL AND tropes != ''))
-  `) as { genres: string; tropes: string }[];
+}> {
+  return cached(`tag-counts:${hideDm ? 1 : 0}`, async (): Promise<{
+    genres: { genre: string; c: number }[];
+    tropes: { trope: string; c: number }[];
+  }> => {
+  const where = hideDm
+    ? `COALESCE(is_duplicate,0) = 0 AND ${NO_DM} AND ((genres IS NOT NULL AND genres != '') OR (tropes IS NOT NULL AND tropes != ''))`
+    : `COALESCE(is_duplicate,0) = 0 AND ((genres IS NOT NULL AND genres != '') OR (tropes IS NOT NULL AND tropes != ''))`;
+  const rows = (await sql.query(
+    `SELECT genres, tropes FROM dramas WHERE ${where}`,
+    []
+  )) as { genres: string; tropes: string }[];
   const gCounter = new Map<string, number>();
   const tCounter = new Map<string, number>();
   for (const r of rows) {
@@ -256,20 +288,22 @@ const getTagCounts = cached("tag-counts", async (): Promise<{
     genres: byCount(gCounter).map(([genre, c]) => ({ genre, c })),
     tropes: byCount(tCounter).map(([trope, c]) => ({ trope, c })),
   };
-});
+  })();
+}
 
-export const getGenres = async (): Promise<{ genre: string; c: number }[]> =>
-  (await getTagCounts()).genres;
+export const getGenres = async (hideDm = false): Promise<{ genre: string; c: number }[]> =>
+  (await getTagCounts(hideDm)).genres;
 
-export const getTropes = async (): Promise<{ trope: string; c: number }[]> =>
-  (await getTagCounts()).tropes;
+export const getTropes = async (hideDm = false): Promise<{ trope: string; c: number }[]> =>
+  (await getTagCounts(hideDm)).tropes;
 
 /** Browse one canonical label: any raw spelling, in either column. */
 async function browseByTag(
   label: string,
   fallbackHome: "genre" | "trope",
   page: number,
-  perPage: number
+  perPage: number,
+  hideDm = false
 ): Promise<{ dramas: DramaRow[]; total: number }> {
   const offset = (page - 1) * perPage;
   const resolved = resolveTag(label, fallbackHome);
@@ -285,7 +319,7 @@ async function browseByTag(
     params.push(pattern);
     conds.push(`tropes ILIKE $${params.length}`);
   }
-  const where = `COALESCE(is_duplicate,0) = 0 AND (${conds.join(" OR ")})`;
+  const where = `COALESCE(is_duplicate,0) = 0${hideDm ? ` AND ${NO_DM}` : ""} AND (${conds.join(" OR ")})`;
   const [dramas, countRows] = await Promise.all([
     sql.query(
       `SELECT ${CARD_COLS} FROM dramas WHERE ${where} ORDER BY scraped_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
@@ -299,12 +333,12 @@ async function browseByTag(
   return { dramas: dramas as DramaRow[], total: Number(countRows[0].c) };
 }
 
-export async function browseByGenre(genre: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
-  return browseByTag(genre, "genre", page, perPage);
+export async function browseByGenre(genre: string, page: number, perPage: number, hideDm = false): Promise<{ dramas: DramaRow[]; total: number }> {
+  return browseByTag(genre, "genre", page, perPage, hideDm);
 }
 
-export async function browseByTrope(trope: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
-  return browseByTag(trope, "trope", page, perPage);
+export async function browseByTrope(trope: string, page: number, perPage: number, hideDm = false): Promise<{ dramas: DramaRow[]; total: number }> {
+  return browseByTag(trope, "trope", page, perPage, hideDm);
 }
 
 export async function getMarathons(limit = 24): Promise<DramaRow[]> {
@@ -318,13 +352,15 @@ export async function getMarathons(limit = 24): Promise<DramaRow[]> {
   })();
 }
 
-export async function getFreshArrivals(limit = 24): Promise<DramaRow[]> {
-  return cached(`fresh:${limit}`, async (): Promise<DramaRow[]> => {
-  return (await sql`
-    SELECT ${sql.unsafe(CARD_COLS)} FROM dramas
-    WHERE COALESCE(is_duplicate,0) = 0
-    ORDER BY scraped_at DESC LIMIT ${limit}
-  `) as DramaRow[];
+export async function getFreshArrivals(limit = 24, hideDm = false): Promise<DramaRow[]> {
+  return cached(`fresh:${limit}:${hideDm ? 1 : 0}`, async (): Promise<DramaRow[]> => {
+  const where = hideDm
+    ? `COALESCE(is_duplicate,0) = 0 AND ${NO_DM}`
+    : `COALESCE(is_duplicate,0) = 0`;
+  return (await sql.query(
+    `SELECT ${CARD_COLS} FROM dramas WHERE ${where} ORDER BY scraped_at DESC LIMIT $1`,
+    [limit]
+  )) as DramaRow[];
   })();
 }
 
@@ -392,19 +428,20 @@ const COLLECTION_TROPES: Record<string, string[]> = {
   "crime-underworld": ["Mafia", "Undercover", "Kidnapping"],
 };
 
-export async function browseCollection(slug: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
+export async function browseCollection(slug: string, page: number, perPage: number, hideDm = false): Promise<{ dramas: DramaRow[]; total: number }> {
   const tropes = COLLECTION_TROPES[slug];
   if (!tropes) return { dramas: [], total: 0 };
   const offset = (page - 1) * perPage;
   // Match any of the collection's tropes
   const conditions = tropes.map((t) => `tropes ILIKE '%"${t.replace(/"/g, '\\"')}"%'`).join(" OR ");
+  const where = `COALESCE(is_duplicate,0) = 0${hideDm ? ` AND ${NO_DM}` : ""} AND (${conditions})`;
   const [dramas, countRows] = await Promise.all([
     sql.query(
-      `SELECT ${CARD_COLS} FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND (${conditions}) ORDER BY scraped_at DESC LIMIT $1 OFFSET $2`,
+      `SELECT ${CARD_COLS} FROM dramas WHERE ${where} ORDER BY scraped_at DESC LIMIT $1 OFFSET $2`,
       [perPage, offset]
     ),
     sql.query(
-      `SELECT COUNT(*) AS c FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND (${conditions})`,
+      `SELECT COUNT(*) AS c FROM dramas WHERE ${where}`,
       []
     ),
   ]);
@@ -416,18 +453,20 @@ export async function browseByTropes(
   tropes: string[],
   page: number,
   perPage: number,
-  orderBy: "newest" | "rating" = "newest"
+  orderBy: "newest" | "rating" = "newest",
+  hideDm = false
 ): Promise<{ dramas: DramaRow[]; total: number }> {
   if (tropes.length === 0) return { dramas: [], total: 0 };
   const offset = (page - 1) * perPage;
   const conditions = tropes.map((t) => `tropes ILIKE '%"${t.replace(/"/g, '\\"')}"%'`).join(" OR ");
   const order = orderBy === "rating" ? "imdb_wr DESC NULLS LAST" : "scraped_at DESC";
+  const where = `COALESCE(is_duplicate,0) = 0${hideDm ? ` AND ${NO_DM}` : ""} AND (${conditions})`;
   const [dramas, countRows] = await Promise.all([
     sql.query(
-      `SELECT ${CARD_COLS} FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND (${conditions}) ORDER BY ${order} LIMIT $1 OFFSET $2`,
+      `SELECT ${CARD_COLS} FROM dramas WHERE ${where} ORDER BY ${order} LIMIT $1 OFFSET $2`,
       [perPage, offset]
     ),
-    sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND (${conditions})`, []),
+    sql.query(`SELECT COUNT(*) AS c FROM dramas WHERE ${where}`, []),
   ]);
   return { dramas: dramas as DramaRow[], total: Number((countRows as { c: string }[])[0]?.c ?? 0) };
 }
@@ -507,15 +546,18 @@ export async function getArtistPhoto(actor: string): Promise<string | null> {
 export async function browseByArtist(
   actor: string,
   page: number,
-  perPage: number
+  perPage: number,
+  hideDm = false
 ): Promise<{ dramas: DramaRow[]; total: number }> {
   // NOTE: never SELECT * here — the full row is ~16MB across all matches,
   // which blows Next.js's 2MB fetch-cache limit and 500s the page.
-  const rows = (await sql`
-    SELECT id, title, poster_url, episode_count, platform, has_videos,
+  const dmFilter = hideDm ? `AND (alt_source IS NULL OR alt_source NOT LIKE 'dailymotion:%')` : "";
+  const rows = (await sql.query(
+    `SELECT id, title, poster_url, episode_count, platform, has_videos,
            alt_source, scraped_at, cast_data FROM dramas
-    WHERE COALESCE(is_duplicate,0) = 0 AND cast_data IS NOT NULL AND cast_data != ''
-  `) as (DramaRow & { scraped_at: string | Date | null; cast_data: string })[];
+    WHERE COALESCE(is_duplicate,0) = 0 AND cast_data IS NOT NULL AND cast_data != '' ${dmFilter}`,
+    []
+  )) as (DramaRow & { scraped_at: string | Date | null; cast_data: string })[];
   const want = actor.toLowerCase();
   const matched = rows.filter((d) =>
     parseCast(d.cast_data).some((c) => c.actor.toLowerCase() === want)
@@ -548,25 +590,28 @@ export interface TopImdbEntry {
  *  of short dramas wrongly mapped to famous TV series with the same title. */
 export type TopImdbSort = "weighted" | "rating" | "votes";
 
-export async function getTopImdb(limit: number, sort: TopImdbSort = "weighted"): Promise<TopImdbEntry[]> {
-  return cached(`topimdb:${limit}:${sort}`, async (): Promise<TopImdbEntry[]> => {
+export async function getTopImdb(limit: number, sort: TopImdbSort = "weighted", hideDm = false): Promise<TopImdbEntry[]> {
+  return cached(`topimdb:${limit}:${sort}:${hideDm ? 1 : 0}`, async (): Promise<TopImdbEntry[]> => {
   try {
+    const dmFilter = hideDm ? `AND ${NO_DM}` : "";
     const orderBy =
       sort === "rating"
-        ? sql`ORDER BY imdb_rating DESC, imdb_votes DESC`
+        ? "imdb_rating DESC, imdb_votes DESC"
         : sort === "votes"
-          ? sql`ORDER BY imdb_votes DESC`
-          : sql`ORDER BY imdb_wr DESC`;
-    const rows = (await sql`
-      SELECT id, title, poster_url, imdb_id, imdb_rating, imdb_votes, imdb_wr,
+          ? "imdb_votes DESC"
+          : "imdb_wr DESC";
+    const rows = (await sql.query(
+      `SELECT id, title, poster_url, imdb_id, imdb_rating, imdb_votes, imdb_wr,
              has_videos, alt_source, episode_count, platform
       FROM dramas
       WHERE COALESCE(is_duplicate,0) = 0
         AND imdb_wr IS NOT NULL
         AND imdb_votes >= 25 AND imdb_votes <= 5000
-      ${orderBy}
-      LIMIT ${limit}
-    `) as TopImdbEntry[];
+        ${dmFilter}
+      ORDER BY ${orderBy}
+      LIMIT $1`,
+      [limit]
+    )) as TopImdbEntry[];
     return rows;
   } catch {
     return [];
@@ -575,9 +620,11 @@ export async function getTopImdb(limit: number, sort: TopImdbSort = "weighted"):
 }
 
 /** Newest dramas added to the collection, optionally filtered by source. */
-export async function getNewArrivals(source: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
-  return cached(`newarr:${source}:${page}:${perPage}`, async (): Promise<{ dramas: DramaRow[]; total: number }> => {
-  const cond = source === "all" ? "COALESCE(is_duplicate,0)=0" : "COALESCE(is_duplicate,0)=0 AND source=$1";
+export async function getNewArrivals(source: string, page: number, perPage: number, hideDm = false): Promise<{ dramas: DramaRow[]; total: number }> {
+  return cached(`newarr:${source}:${page}:${perPage}:${hideDm ? 1 : 0}`, async (): Promise<{ dramas: DramaRow[]; total: number }> => {
+  const cond = source === "all"
+    ? `COALESCE(is_duplicate,0)=0${hideDm ? ` AND ${NO_DM}` : ""}`
+    : `COALESCE(is_duplicate,0)=0 AND source=$1${hideDm ? ` AND ${NO_DM}` : ""}`;
   const args = source === "all" ? [] : [source];
   const [dramas, countRows] = await Promise.all([
     sql.query(
@@ -670,18 +717,20 @@ export async function getFeaturedDrama(slot = 0): Promise<DramaRow | null> {
 }
 
 /** Trending: most-saved dramas (real popularity signal), newest saves first on ties. */
-export async function getTrending(limit = 12): Promise<DramaRow[]> {
-  return cached(`trending:${limit}`, async (): Promise<DramaRow[]> => {
+export async function getTrending(limit = 12, hideDm = false): Promise<DramaRow[]> {
+  return cached(`trending:${limit}:${hideDm ? 1 : 0}`, async (): Promise<DramaRow[]> => {
   try {
     await ensureSavedTable();
-    const rows = (await sql`
-      SELECT ${sql.unsafe(CARD_COLS.replace(/(\w+)/g, "d.$1"))}, COUNT(*) AS saves
+    const dmFilter = hideDm ? `AND (d.alt_source IS NULL OR d.alt_source NOT LIKE 'dailymotion:%')` : "";
+    const rows = (await sql.query(
+      `SELECT ${CARD_COLS.replace(/(\w+)/g, "d.$1")}, COUNT(*) AS saves
       FROM saved_dramas s JOIN dramas d ON d.id = s.drama_id
-      WHERE COALESCE(d.is_duplicate,0) = 0
+      WHERE COALESCE(d.is_duplicate,0) = 0 ${dmFilter}
       GROUP BY d.id
       ORDER BY saves DESC, MAX(s.added_at) DESC
-      LIMIT ${limit}
-    `) as DramaRow[];
+      LIMIT $1`,
+      [limit]
+    )) as DramaRow[];
     if (rows.length >= 4) return rows;
     // Fallback: newest watchable dramas
     return (await sql`
@@ -701,9 +750,10 @@ export async function getRelatedDramas(
   genres: string[],
   tropes: string[],
   actors: string[],
-  limit = 12
+  limit = 12,
+  hideDm = false
 ): Promise<DramaRow[]> {
-  return cached(`related:${dramaId}:${limit}`, async (): Promise<DramaRow[]> => {
+  return cached(`related:${dramaId}:${limit}:${hideDm ? 1 : 0}`, async (): Promise<DramaRow[]> => {
   try {
     const tags = Array.from(new Set([...genres, ...tropes]));
     if (tags.length === 0 && actors.length === 0) {
@@ -730,6 +780,7 @@ export async function getRelatedDramas(
     const tagParams = tags.map((t) => `%"${t}"%`);
     const where =
       `COALESCE(is_duplicate,0) = 0 AND id != $1` +
+      (hideDm ? ` AND ${NO_DM}` : "") +
       (likeConds.length ? ` AND (${likeConds.join(" OR ")})` : "");
     const rows = (await sql.query(
       `SELECT ${CARD_COLS}, genres AS g_raw, tropes AS t_raw, cast_data FROM dramas WHERE ${where} LIMIT 400`,
@@ -775,12 +826,13 @@ export async function getRelatedDramas(
 }
 
 /** Fetch dramas by id list, preserving the requested order. Used for shared lists. */
-export async function getDramasByIds(ids: string[]): Promise<DramaRow[]> {
+export async function getDramasByIds(ids: string[], hideDm = false): Promise<DramaRow[]> {
   const clean = Array.from(new Set(ids.filter(Boolean))).slice(0, 100);
   if (clean.length === 0) return [];
   try {
+    const dmFilter = hideDm ? `AND (alt_source IS NULL OR alt_source NOT LIKE 'dailymotion:%')` : "";
     const rows = (await sql.query(
-      `SELECT ${CARD_COLS} FROM dramas WHERE id = ANY($1)`,
+      `SELECT ${CARD_COLS} FROM dramas WHERE id = ANY($1) ${dmFilter}`,
       [clean]
     )) as DramaRow[];
     const order = new Map(clean.map((id, i) => [id, i]));
@@ -801,14 +853,17 @@ export interface FilterOpts {
   sort: "newest" | "rating" | "az" | "za";
   page: number;
   perPage: number;
+  hideDm?: boolean;
 }
 
 /** Prime Video-style combinable filters over the full catalog. */
 export async function browseFiltered(opts: FilterOpts): Promise<{ dramas: DramaRow[]; total: number }> {
-  const { q, genre, trope, platform, minRating, epRange, onlyWithVideos, sort, page, perPage } = opts;
-  return cached(`browsef:${q}|${genre}|${trope}|${platform}|${minRating}|${epRange ?? ""}|${onlyWithVideos ? 1 : 0}|${sort ?? ""}|${page}|${perPage}`, async (): Promise<{ dramas: DramaRow[]; total: number }> => {
+  const { q, genre, trope, platform, minRating, epRange, onlyWithVideos, sort, page, perPage, hideDm = false } = opts;
+  return cached(`browsef:${q}|${genre}|${trope}|${platform}|${minRating}|${epRange ?? ""}|${onlyWithVideos ? 1 : 0}|${sort ?? ""}|${page}|${perPage}|${hideDm ? 1 : 0}`, async (): Promise<{ dramas: DramaRow[]; total: number }> => {
   const params: (string | number)[] = [];
   const where: string[] = ["COALESCE(is_duplicate,0) = 0"];
+
+  if (hideDm) where.push(NO_DM);
 
   if (q) {
     params.push(`%${q}%`, `%${q}%`, `%${q}%`);
@@ -855,18 +910,21 @@ export async function browseFiltered(opts: FilterOpts): Promise<{ dramas: DramaR
 }
 
 /** Hidden Gems: highly rated dramas few people have saved — quality without the hype. */
-export async function getHiddenGems(limit = 12): Promise<DramaRow[]> {
-  return cached(`gems:${limit}`, async (): Promise<DramaRow[]> => {
+export async function getHiddenGems(limit = 12, hideDm = false): Promise<DramaRow[]> {
+  return cached(`gems:${limit}:${hideDm ? 1 : 0}`, async (): Promise<DramaRow[]> => {
   try {
     await ensureSavedTable();
-    const rows = (await sql`
-      SELECT ${sql.unsafe(CARD_COLS)} FROM dramas d
+    const dmFilter = hideDm ? `AND (d.alt_source IS NULL OR d.alt_source NOT LIKE 'dailymotion:%')` : "";
+    const rows = (await sql.query(
+      `SELECT ${CARD_COLS} FROM dramas d
       WHERE COALESCE(d.is_duplicate,0) = 0
         AND d.imdb_wr IS NOT NULL AND d.imdb_votes >= 25 AND d.imdb_votes <= 5000
         AND NOT EXISTS (SELECT 1 FROM saved_dramas s WHERE s.drama_id = d.id)
+        ${dmFilter}
       ORDER BY d.imdb_wr DESC
-      LIMIT ${limit}
-    `) as DramaRow[];
+      LIMIT $1`,
+      [limit]
+    )) as DramaRow[];
     return rows;
   } catch {
     return [];
