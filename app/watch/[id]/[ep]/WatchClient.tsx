@@ -306,7 +306,7 @@ export default function WatchClient({
 
   // Legacy path: stored URLs / Dailymotion — unchanged for all 88k legacy rows.
   const legacyArea = videoUrl ? (
-    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} onTheaterChange={setTheater} />
+    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} onTheaterChange={setTheater} fullWidthBar />
   ) : dailymotionEmbed ? (
     <div className="rounded-xl bg-card p-10 text-center">
       <div className="text-4xl mb-4">🎬</div>
@@ -343,6 +343,7 @@ export default function WatchClient({
         onEnded={onEnded}
         onNavigate={onNavigate}
         onTheaterChange={setTheater}
+        fullWidthBar
       />
     ) : status === "error" && error ? (
       error.code === "not_resolvable" ? (

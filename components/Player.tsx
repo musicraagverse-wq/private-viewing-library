@@ -4,10 +4,14 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import type Hls from "hls.js";
 
 function fmt(s: number) {
-  if (!isFinite(s) || s < 0) return "0:00";
+  if (!isFinite(s) || s < 0) return "00:00";
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, "0")}`;
+  if (m >= 60) {
+    const h = Math.floor(m / 60);
+    return `${h}:${(m % 60).toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
+  }
+  return `${m.toString().padStart(2, "0")}:${sec.toString().padStart(2, "0")}`;
 }
 
 /** Video element with the Safari picture-in-picture fallback. */
@@ -17,9 +21,11 @@ type PipVideo = HTMLVideoElement & {
 };
 
 /**
- * EveryDrama-style player: standard bottom control bar
- * (play, volume, scrubber, time, fullscreen) in a vertical frame,
- * plus the retained −10s/+10s and prev/next episode buttons.
+ * EveryDrama-style player: bottom control bar (play, volume, scrubber,
+ * time, fullscreen) in a vertical frame, plus the retained −10s/+10s
+ * and prev/next episode buttons. On the watch page the bar spans the
+ * full player-column width (fullWidthBar), like the reference player —
+ * not just the video frame.
  */
 export default function Player({
   dramaId,
@@ -33,6 +39,7 @@ export default function Player({
   onNavigate,
   onClose,
   onTheaterChange,
+  fullWidthBar,
 }: {
   dramaId: string;
   episode: number;
@@ -47,6 +54,10 @@ export default function Player({
   onClose?: () => void;
   /** Theater mode hides the sidebar (the player is already full-height). */
   onTheaterChange?: (theater: boolean) => void;
+  /** Watch page only: the control bar spans the full player-column width
+      (viewport minus the 400px sidebar), not just the video frame. The
+      homepage hero keeps the bar inside the frame. */
+  fullWidthBar?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -400,9 +411,11 @@ export default function Player({
         </button>
       )}
 
-      {/* bottom control bar */}
+      {/* bottom control bar: full player-column width on the watch page
+          (fixed to the viewport bottom, stopping at the 400px sidebar
+          unless theater mode hides it), frame width everywhere else */}
       <div
-        className={`absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-2.5 pt-10 transition-opacity ${
+        className={`${fullWidthBar ? `fixed inset-x-0 bottom-0 z-30 ${theater ? "" : "lg:right-[400px]"}` : "absolute inset-x-0 bottom-0"} bg-gradient-to-t from-black/90 via-black/50 to-transparent px-3 pb-2.5 pt-10 transition-opacity ${
           controls ? "opacity-100" : "opacity-0"
         }`}
       >
@@ -438,7 +451,7 @@ export default function Player({
             aria-label={`Playback speed ${rate}x — click to change`}
             title="Playback speed"
           >
-            {rate}x
+            {Number.isInteger(rate) ? `${rate}.0` : rate}x
           </button>
           <div className="group/vol flex items-center">
             <button onClick={toggleMute} className="rounded p-1.5 text-base hover:bg-white/10" aria-label={muted ? "Unmute" : "Mute"}>
