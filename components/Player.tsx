@@ -10,6 +10,12 @@ function fmt(s: number) {
   return `${m}:${sec.toString().padStart(2, "0")}`;
 }
 
+/** Video element with the Safari picture-in-picture fallback. */
+type PipVideo = HTMLVideoElement & {
+  webkitSetPresentationMode?: (mode: string) => void;
+  webkitPresentationMode?: string;
+};
+
 /**
  * EveryDrama-style player: standard bottom control bar
  * (play, volume, scrubber, time, fullscreen) in a vertical frame,
@@ -23,6 +29,7 @@ export default function Player({
   format,
   posterUrl,
   resumeAt,
+  synopsis,
   onEnded,
   onNavigate,
   onClose,
@@ -35,6 +42,8 @@ export default function Player({
   format?: "hls" | "mp4";
   posterUrl: string | null;
   resumeAt: number;
+  /** Shown Hero-style on the image while paused; hidden while playing. */
+  synopsis?: string | null;
   onEnded: () => void;
   onNavigate: (ep: number) => void;
   onClose?: () => void;
@@ -65,6 +74,34 @@ export default function Player({
   const rateRef = useRef(1);
   // Theater mode: widens the frame beyond the default 420px column.
   const [theater, setTheater] = useState(false);
+  // Picture-in-picture: standard API + Safari webkit fallback. Support is
+  // detected after mount (avoids a server/client render mismatch).
+  const [pip, setPip] = useState(false);
+  const [pipSupported, setPipSupported] = useState(false);
+  useEffect(() => {
+    const video = videoRef.current as PipVideo | null;
+    setPipSupported(
+      (typeof document !== "undefined" &&
+        "pictureInPictureEnabled" in document &&
+        (document as Document).pictureInPictureEnabled) ||
+        (video != null && typeof video.webkitSetPresentationMode === "function")
+    );
+    function syncPip() {
+      const v = videoRef.current as PipVideo | null;
+      setPip(
+        document.pictureInPictureElement === v ||
+          v?.webkitPresentationMode === "picture-in-picture"
+      );
+    }
+    document.addEventListener("enterpictureinpicture", syncPip);
+    document.addEventListener("leavepictureinpicture", syncPip);
+    video?.addEventListener("webkitpresentationmodechanged", syncPip);
+    return () => {
+      document.removeEventListener("enterpictureinpicture", syncPip);
+      document.removeEventListener("leavepictureinpicture", syncPip);
+      video?.removeEventListener("webkitpresentationmodechanged", syncPip);
+    };
+  }, []);
 
   const save = useCallback(
     (pos: number, force = false) => {
@@ -215,6 +252,23 @@ export default function Player({
     pokeControls();
   }
 
+  async function togglePip() {
+    const video = videoRef.current as PipVideo | null;
+    if (!video) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (video.requestPictureInPicture) {
+        await video.requestPictureInPicture();
+      } else if (video.webkitSetPresentationMode) {
+        video.webkitSetPresentationMode(
+          video.webkitPresentationMode === "picture-in-picture" ? "inline" : "picture-in-picture"
+        );
+      }
+    } catch {}
+    pokeControls();
+  }
+
   function cycleRate() {
     const video = videoRef.current;
     const idx = SPEEDS.indexOf(rateRef.current);
@@ -332,6 +386,15 @@ export default function Player({
         </button>
       )}
 
+      {/* synopsis on the image, Hero-style: gradient + text, shown while
+          paused (pre-play poster or paused frame), hidden while playing so
+          it never covers the video or subtitles */}
+      {!playing && synopsis && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-[72px] z-10 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-4 pb-3 pt-8">
+          <p className="line-clamp-3 text-sm leading-relaxed text-white/85">{synopsis}</p>
+        </div>
+      )}
+
       {/* close */}
       {onClose && (
         <button
@@ -361,11 +424,17 @@ export default function Player({
             style={{ left: `${pct}%` }}
           />
         </div>
-        {/* buttons row: slim bar — play + time left; speed, volume, theater, fullscreen right.
-            Prev/next live on the floating chevrons; ±10s via double-click (kept). */}
+        {/* buttons row: play, ±10s, time; speed, volume, theater, PiP, fullscreen.
+            Prev/next live on the floating chevrons; ±10s also via double-click. */}
         <div className="mt-0.5 flex items-center gap-1 text-white">
           <button onClick={toggle} className="rounded p-1.5 text-xl hover:bg-white/10" aria-label={playing ? "Pause" : "Play"}>
             {playing ? "⏸" : "▶"}
+          </button>
+          <button onClick={() => seek(-10)} className="rounded px-1.5 py-1 text-xs font-extrabold hover:bg-white/10" aria-label="Back 10 seconds">
+            −10
+          </button>
+          <button onClick={() => seek(10)} className="rounded px-1.5 py-1 text-xs font-extrabold hover:bg-white/10" aria-label="Forward 10 seconds">
+            +10
           </button>
           <span className="ml-1 text-xs font-medium text-white/80">
             {fmt(progress)} / {fmt(duration)}
@@ -408,6 +477,19 @@ export default function Player({
               <path d="M7 5v14M17 5v14" strokeLinecap="round" />
             </svg>
           </button>
+          {pipSupported && (
+            <button
+              onClick={togglePip}
+              className={`rounded p-1.5 hover:bg-white/10 ${pip ? "text-primary" : ""}`}
+              aria-label={pip ? "Exit picture-in-picture" : "Picture-in-picture"}
+              title="Picture-in-picture"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5" aria-hidden="true">
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <rect x="12" y="12" width="7" height="5" rx="1" fill="currentColor" stroke="none" />
+              </svg>
+            </button>
+          )}
           <button onClick={toggleFullscreen} className="rounded p-1.5 text-base hover:bg-white/10" aria-label="Fullscreen">
             ⛶
           </button>

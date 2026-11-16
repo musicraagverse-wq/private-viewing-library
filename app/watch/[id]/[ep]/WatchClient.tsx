@@ -297,7 +297,7 @@ export default function WatchClient({
 
   // Legacy path: stored URLs / Dailymotion — unchanged for all 88k legacy rows.
   const legacyArea = videoUrl ? (
-    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} />
+    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} synopsis={synopsis} onEnded={onEnded} onNavigate={onNavigate} />
   ) : dailymotionEmbed ? (
     <div className="rounded-xl bg-card p-10 text-center">
       <div className="text-4xl mb-4">🎬</div>
@@ -331,6 +331,7 @@ export default function WatchClient({
         format={stream.format}
         posterUrl={posterUrl}
         resumeAt={resumeAt}
+        synopsis={synopsis}
         onEnded={onEnded}
         onNavigate={onNavigate}
       />
@@ -422,7 +423,8 @@ export default function WatchClient({
         </div>
       </div>
 
-      {/* Sidebar: title, tags, synopsis, favourite, share, episodes */}
+      {/* Sidebar: title, tags, favourite, share, episodes
+          (synopsis lives on the player image now, Hero-style) */}
       <aside className="min-w-0 space-y-4">
         <div>
           <h1 className="text-xl font-extrabold text-text sm:text-2xl">{dramaTitle}</h1>
@@ -465,10 +467,6 @@ export default function WatchClient({
               </span>
             ))}
           </div>
-        )}
-
-        {synopsis && (
-          <p className="text-sm leading-relaxed text-text/90">{synopsis}</p>
         )}
 
         <FavoriteButton dramaId={dramaId} />
