@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const RANGE = 20;
 
@@ -17,12 +17,16 @@ export default function EpisodeGrid({
 }) {
   const count = totalEps > 0 ? totalEps : episode;
   const rangeCount = Math.max(1, Math.ceil(count / RANGE));
-  const [rangeTab, setRangeTab] = useState<number | null>(null);
-  // Follow the current episode across range boundaries (e.g. auto-advance
-  // 20 -> 21); a manually picked tab sticks while the episode stays in it.
   const epRange = Math.floor((episode - 1) / RANGE);
-  const range =
-    rangeTab !== null && Math.floor((episode - 1) / RANGE) === rangeTab ? rangeTab : epRange;
+  // Displayed range: follows the playing episode across boundaries
+  // (auto-advance 20 -> 21), but a manually picked tab sticks until the
+  // episode moves to another range. (The old rangeTab check required the
+  // episode to already be in the picked range, so the tabs could never
+  // switch to another range — they were dead buttons.)
+  const [range, setRange] = useState(epRange);
+  useEffect(() => {
+    setRange(epRange);
+  }, [epRange]);
   const start = range * RANGE + 1;
   const end = Math.min(count, (range + 1) * RANGE);
   const watchedSet = new Set(watched);
@@ -37,7 +41,7 @@ export default function EpisodeGrid({
             return (
               <button
                 key={r}
-                onClick={() => setRangeTab(r)}
+                onClick={() => setRange(r)}
                 className={`text-sm font-bold transition ${
                   r === range ? "text-primary" : "text-muted hover:text-text"
                 }`}

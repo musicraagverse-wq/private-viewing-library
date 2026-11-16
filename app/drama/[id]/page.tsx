@@ -137,7 +137,7 @@ export default async function DramaDetail({ params }: { params: { id: string } }
       {drama.synopsis && (
         <section>
           <h2 className="mb-3 text-xl font-bold">Synopsis</h2>
-          <p className="max-w-4xl text-sm leading-relaxed text-text/90">{drama.synopsis}</p>
+          <p className="text-sm leading-relaxed text-text/90">{drama.synopsis}</p>
         </section>
       )}
 
@@ -209,7 +209,7 @@ export default async function DramaDetail({ params }: { params: { id: string } }
       {/* Where to Watch */}
       <section>
         <h2 className="mb-3 text-xl font-bold">Where to Watch</h2>
-        <div className="rounded-lg border border-border bg-surface p-4">
+        <div className="rounded-lg border border-border bg-surface p-6 sm:p-8">
           <div className="flex items-center justify-between py-2">
             <span className="text-sm font-semibold">Primary Platform</span>
             <span className="text-sm text-primary font-semibold">
