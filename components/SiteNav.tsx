@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import LogoutButton, { LogoutMenuItem } from "./LogoutButton";
 
-const MAIN_LINKS = [
+export const MAIN_LINKS = [
   { href: "/", label: "Home" },
   { href: "/explore#tropes", label: "Tropes" },
   { href: "/explore#platforms", label: "Platforms" },
@@ -13,7 +13,7 @@ const MAIN_LINKS = [
   { href: "/new", label: "New" },
 ];
 
-const EXPLORE_LINKS = [
+export const EXPLORE_LINKS = [
   { href: "/browse", label: "All Dramas", desc: "Filter the full catalog" },
   { href: "/explore#genres", label: "Genres", desc: "Romance, thriller, fantasy…" },
   { href: "/explore#tropes", label: "Tropes", desc: "Story patterns you love" },
@@ -80,7 +80,7 @@ function ExploreDropdown({ pathname }: { pathname: string }) {
   );
 }
 
-function HeartIcon({ className }: { className?: string }) {
+export function HeartIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
       <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
@@ -88,7 +88,7 @@ function HeartIcon({ className }: { className?: string }) {
   );
 }
 
-function BookmarkIcon({ className }: { className?: string }) {
+export function BookmarkIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className={className}>
       <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z" />

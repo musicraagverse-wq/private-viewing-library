@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import SiteNav from "@/components/SiteNav";
+import WatchNav from "@/components/WatchNav";
 import { SavedListsProvider } from "@/components/SavedLists";
 
 /**
@@ -21,7 +22,15 @@ export default function Chrome({
   const immersive = pathname?.startsWith("/watch/") ?? false;
 
   if (immersive) {
-    return <SavedListsProvider>{children}</SavedListsProvider>;
+    return (
+      <SavedListsProvider>
+        {/* Hover-reveal nav drawer: the header is hidden while watching, so
+            the same links live in a sidebar that slides in from the left
+            edge on hover and away when the cursor leaves. */}
+        <WatchNav loggedIn={loggedIn} />
+        {children}
+      </SavedListsProvider>
+    );
   }
 
   return (
