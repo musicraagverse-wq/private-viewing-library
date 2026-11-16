@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDrama, getProgress, browseDramas } from "@/lib/db";
+import { getDrama, getProgress, getWatchedEpisodes, browseDramas } from "@/lib/db";
 import { parseEpisodeUrls, parseEpisodeIds, dailymotionId } from "@/lib/types";
 import { isResolvableSource } from "@/lib/stream";
 import WatchClient from "./WatchClient";
@@ -37,6 +37,17 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
   const dm = !videoUrl ? dailymotionId(drama.alt_source) : null;
   const progress = await getProgress(drama.id);
   const resumeAt = progress && progress.episode === ep ? progress.position_seconds : 0;
+  const watchedEpisodes = await getWatchedEpisodes(drama.id);
+
+  // Genres + tropes (same JSON columns the drama detail page reads)
+  let genreList: string[] = [];
+  try {
+    if (drama.genres) genreList = JSON.parse(drama.genres);
+  } catch {}
+  let tropeList: string[] = [];
+  try {
+    if (drama.tropes) tropeList = JSON.parse(drama.tropes);
+  } catch {}
 
   // "Up next" recommendations for the end-of-drama screen (same platform, with videos)
   let upNext: { id: string; title: string; poster_url: string | null }[] = [];
@@ -81,6 +92,10 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
         upNext={upNext}
         source={drama.source}
         episodeIds={resolvable ? episodeIds : null}
+        genres={genreList}
+        tropes={tropeList}
+        synopsis={drama.synopsis}
+        watchedEpisodes={watchedEpisodes}
       />
 
       {!resolvable && !videoUrl && !dm && (

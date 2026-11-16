@@ -146,6 +146,35 @@ export async function getProgress(dramaId: string): Promise<WatchProgress | null
   return rows[0] ?? null;
 }
 
+/**
+ * Episodes that count as watched for the watch-page checkmarks.
+ *
+ * NOTE: watch_progress stores ONE row per drama (the latest episode), so this
+ * is an inference, not a per-episode history: every episode before the latest
+ * progress episode was passed through sequentially (auto-advance only fires
+ * on ended), and the latest episode counts once it is >= 90% through — or on
+ * any saved position when its duration is unknown. A manual jump to a later
+ * episode can over-mark earlier ones; the write path is intentionally
+ * untouched, so this is the best signal available.
+ */
+export async function getWatchedEpisodes(dramaId: string): Promise<number[]> {
+  try {
+    const p = await getProgress(dramaId);
+    if (!p) return [];
+    const watched: number[] = [];
+    for (let ep = 1; ep < p.episode; ep++) watched.push(ep);
+    const dur = p.duration_seconds;
+    if (dur && dur > 0) {
+      if (p.position_seconds >= 0.9 * dur) watched.push(p.episode);
+    } else if (p.position_seconds > 0) {
+      watched.push(p.episode);
+    }
+    return watched;
+  } catch {
+    return [];
+  }
+}
+
 export async function saveProgress(dramaId: string, episode: number, positionSeconds: number, durationSeconds?: number): Promise<void> {
   await sql`ALTER TABLE watch_progress ADD COLUMN IF NOT EXISTS duration_seconds INTEGER`;
   await sql`

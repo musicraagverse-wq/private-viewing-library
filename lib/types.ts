@@ -6,6 +6,7 @@ export interface DramaRow {
   platform: string | null;
   episode_count: number;
   genres: string | null;
+  tropes: string | null;
   everydrama_url: string | null;
   episode_urls: string | null;
   episode_ids: string | null;
@@ -24,6 +25,7 @@ export interface WatchProgress {
   drama_id: string;
   episode: number;
   position_seconds: number;
+  duration_seconds: number | null;
   updated_at: string | null;
 }
 

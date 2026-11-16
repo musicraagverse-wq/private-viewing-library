@@ -59,6 +59,12 @@ export default function Player({
   });
   const [flash, setFlash] = useState<"-10" | "+10" | null>(null);
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Playback speed: cycles 0.5 / 0.75 / 1 / 1.25 / 1.5 / 2, default 1x.
+  const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
+  const [rate, setRate] = useState(1);
+  const rateRef = useRef(1);
+  // Theater mode: widens the frame beyond the default 420px column.
+  const [theater, setTheater] = useState(false);
 
   const save = useCallback(
     (pos: number, force = false) => {
@@ -103,6 +109,8 @@ export default function Player({
     // restore the user's last volume on every (re)mount
     video.volume = volume;
     video.muted = muted;
+    // re-apply the chosen playback speed (a new source resets it to 1x)
+    video.playbackRate = rateRef.current;
     if (isHls) {
       // hls.js loads on demand only, keeping it out of the initial bundle
       import("hls.js")
@@ -207,6 +215,16 @@ export default function Player({
     pokeControls();
   }
 
+  function cycleRate() {
+    const video = videoRef.current;
+    const idx = SPEEDS.indexOf(rateRef.current);
+    const next = SPEEDS[(idx + 1) % SPEEDS.length];
+    rateRef.current = next;
+    setRate(next);
+    if (video) video.playbackRate = next;
+    pokeControls();
+  }
+
   function onBarClick(e: React.MouseEvent<HTMLDivElement>) {
     const video = videoRef.current;
     if (!video || !video.duration) return;
@@ -220,7 +238,9 @@ export default function Player({
   return (
     <div
       ref={boxRef}
-      className="relative mx-auto aspect-[9/16] max-h-[82vh] w-full max-w-[420px] select-none overflow-hidden rounded-xl bg-black"
+      className={`relative mx-auto aspect-[9/16] w-full select-none overflow-hidden rounded-xl bg-black ${
+        theater ? "max-h-[92vh] max-w-[680px]" : "max-h-[82vh] max-w-[420px]"
+      }`}
       onMouseEnter={() => {
         setControls(true);
         if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -341,32 +361,23 @@ export default function Player({
             style={{ left: `${pct}%` }}
           />
         </div>
-        {/* buttons row */}
+        {/* buttons row: slim bar — play + time left; speed, volume, theater, fullscreen right.
+            Prev/next live on the floating chevrons; ±10s via double-click (kept). */}
         <div className="mt-0.5 flex items-center gap-1 text-white">
-          <button
-            onClick={() => episode > 1 && onNavigate(episode - 1)}
-            disabled={episode <= 1}
-            className="rounded p-1.5 text-base disabled:opacity-30 hover:bg-white/10"
-            aria-label="Previous episode"
-          >
-            ⏮
-          </button>
           <button onClick={toggle} className="rounded p-1.5 text-xl hover:bg-white/10" aria-label={playing ? "Pause" : "Play"}>
             {playing ? "⏸" : "▶"}
           </button>
+          <span className="ml-1 text-xs font-medium text-white/80">
+            {fmt(progress)} / {fmt(duration)}
+          </span>
+          <span className="flex-1" />
           <button
-            onClick={() => (totalEps === 0 || episode < totalEps) && onNavigate(episode + 1)}
-            disabled={totalEps > 0 && episode >= totalEps}
-            className="rounded p-1.5 text-base disabled:opacity-30 hover:bg-white/10"
-            aria-label="Next episode"
+            onClick={cycleRate}
+            className="rounded px-2 py-1 text-xs font-extrabold hover:bg-white/10"
+            aria-label={`Playback speed ${rate}x — click to change`}
+            title="Playback speed"
           >
-            ⏭
-          </button>
-          <button onClick={() => seek(-10)} className="rounded px-1.5 py-1 text-xs font-extrabold hover:bg-white/10" aria-label="Back 10 seconds">
-            −10
-          </button>
-          <button onClick={() => seek(10)} className="rounded px-1.5 py-1 text-xs font-extrabold hover:bg-white/10" aria-label="Forward 10 seconds">
-            +10
+            {rate}x
           </button>
           <div className="group/vol flex items-center">
             <button onClick={toggleMute} className="rounded p-1.5 text-base hover:bg-white/10" aria-label={muted ? "Unmute" : "Mute"}>
@@ -383,10 +394,20 @@ export default function Player({
               aria-label="Volume"
             />
           </div>
-          <span className="ml-1 text-xs font-medium text-white/80">
-            {fmt(progress)} / {fmt(duration)}
-          </span>
-          <span className="flex-1" />
+          <button
+            onClick={() => {
+              setTheater((t) => !t);
+              pokeControls();
+            }}
+            className={`rounded p-1.5 hover:bg-white/10 ${theater ? "text-primary" : ""}`}
+            aria-label={theater ? "Exit theater mode" : "Theater mode"}
+            title="Theater mode"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-5 w-5" aria-hidden="true">
+              <rect x="2" y="5" width="20" height="14" rx="2" />
+              <path d="M7 5v14M17 5v14" strokeLinecap="round" />
+            </svg>
+          </button>
           <button onClick={toggleFullscreen} className="rounded p-1.5 text-base hover:bg-white/10" aria-label="Fullscreen">
             ⛶
           </button>
