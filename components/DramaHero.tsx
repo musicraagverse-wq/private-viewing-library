@@ -72,6 +72,9 @@ export default function DramaHero({
   const [watching, setWatching] = useState(false);
   const [episode, setEpisode] = useState(resumeEp);
   const [showUpNext, setShowUpNext] = useState(false);
+  // Backdrop: res.chartdrama.com throws random 403s — hide the blurred
+  // backdrop img on error instead of leaving a broken black slab.
+  const [backdropFailed, setBackdropFailed] = useState(false);
   // Autoplay next episode: persisted, default ON (same key as the watch page).
   const [autoplay, setAutoplay] = useState<boolean>(() =>
     typeof window !== "undefined" ? localStorage.getItem("sd_autoplay_next") !== "0" : true
@@ -335,11 +338,12 @@ export default function DramaHero({
   return (
     <section className="relative overflow-hidden rounded-2xl border border-border">
       {/* Ambient backdrop: blurred poster */}
-      {posterUrl && (
+      {posterUrl && !backdropFailed && (
         <div className="absolute inset-0" aria-hidden="true">
           <img
             src={posterUrl}
             alt=""
+            onError={() => setBackdropFailed(true)}
             className="h-full w-full scale-110 object-cover blur-2xl brightness-[0.35] saturate-150"
           />
         </div>
@@ -401,24 +405,12 @@ export default function DramaHero({
               <h2 className="mb-3 text-lg font-bold text-white">
                 Episodes <span className="text-sm font-semibold text-white/50">({gridEps})</span>
               </h2>
-              <div className="grid grid-cols-6 gap-2 sm:grid-cols-8 md:grid-cols-10">
-                {Array.from({ length: Math.min(gridEps, 100) }, (_, i) => i + 1).map((ep) => (
-                  <button
-                    key={ep}
-                    onClick={() => startWatching(ep)}
-                    className={`rounded-lg border py-2.5 text-sm font-bold backdrop-blur transition ${
-                      ep === resumeEp && hasProgress
-                        ? "border-primary bg-primary text-black"
-                        : "border-white/20 bg-white/5 text-white hover:border-primary"
-                    }`}
-                  >
-                    {ep}
-                  </button>
-                ))}
-              </div>
-              {gridEps > 100 && (
-                <p className="mt-2 text-xs text-white/50">Showing first 100 of {gridEps} episodes.</p>
-              )}
+              <EpisodeGrid
+                episode={resumeEp}
+                totalEps={gridEps}
+                watched={watchedEpisodes}
+                onNavigate={startWatching}
+              />
             </div>
           ) : null;
         })()}
