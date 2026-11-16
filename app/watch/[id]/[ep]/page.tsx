@@ -67,6 +67,23 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
     upNext = [];
   }
 
+  // Cast from the IMDb mapping (same JSON column the drama detail page reads)
+  let cast: { actor: string; character: string }[] = [];
+  try {
+    if (drama.cast_data) cast = JSON.parse(drama.cast_data);
+  } catch {}
+
+  // More Like This: shared genres, tropes, cast (same scoring as the detail page)
+  let related: { id: string; title: string; poster_url: string | null }[] = [];
+  try {
+    const { getRelatedDramas } = await import("@/lib/db");
+    const actorNames = cast.map((c) => c.actor).filter(Boolean);
+    const rel = await getRelatedDramas(drama.id, genreList, tropeList, actorNames, 8);
+    related = rel.map((r) => ({ id: r.id, title: r.title, poster_url: r.poster_url ?? null }));
+  } catch {
+    related = [];
+  }
+
   // Immersive watch view (see Chrome): full viewport height, no header —
   // the back arrow is overlaid on the video by WatchClient, like the reference.
   return (
@@ -87,6 +104,8 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
         genres={genreList}
         tropes={tropeList}
         synopsis={drama.synopsis}
+        cast={cast}
+        related={related}
         watchedEpisodes={watchedEpisodes}
       />
 

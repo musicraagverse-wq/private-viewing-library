@@ -230,6 +230,8 @@ export default function WatchClient({
   genres,
   tropes,
   synopsis,
+  cast,
+  related,
   watchedEpisodes,
 }: {
   dramaId: string;
@@ -249,6 +251,10 @@ export default function WatchClient({
   genres: string[];
   tropes: string[];
   synopsis: string | null;
+  /** Cast from the IMDb mapping (same JSON column the detail page reads). */
+  cast: { actor: string; character: string }[];
+  /** More Like This, same scoring as the detail page. */
+  related: UpNextItem[];
   watchedEpisodes: number[];
 }) {
   const router = useRouter();
@@ -487,6 +493,24 @@ export default function WatchClient({
         <FavoriteButton dramaId={dramaId} />
         <ShareRow dramaId={dramaId} title={dramaTitle} />
 
+        {cast.length > 0 && (
+          <div className="border-t border-border pt-4">
+            <h2 className="text-base font-extrabold text-text">Cast</h2>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {cast.map((c, i) => (
+                <Link
+                  key={i}
+                  href={`/actor/${encodeURIComponent(c.actor)}`}
+                  className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs transition-colors hover:border-primary hover:text-primary"
+                >
+                  <span className="font-semibold">{c.actor}</span>
+                  {c.character && <span className="text-muted"> as {c.character}</span>}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="border-t border-border pt-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-extrabold text-text">All Episodes</h2>
@@ -519,6 +543,29 @@ export default function WatchClient({
             />
           </div>
         </div>
+
+        {related.length > 0 && (
+          <div className="border-t border-border pt-4">
+            <h2 className="text-base font-extrabold text-text">More Like This</h2>
+            <div className="mt-3 flex flex-col gap-2">
+              {related.map((d) => (
+                <Link
+                  key={d.id}
+                  href={`/drama/${encodeURIComponent(d.id)}`}
+                  className="flex items-center gap-3 rounded-lg border border-border bg-surface p-2 transition hover:border-primary"
+                >
+                  <span className="relative h-16 w-12 shrink-0 overflow-hidden rounded-md">
+                    <Poster title={d.title} posterUrl={d.poster_url} className="h-full w-full" />
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-text">
+                    {d.title}
+                  </span>
+                  <span className="shrink-0 px-2 text-sm font-bold text-primary">▶ Play</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </aside>
       )}
     </div>
