@@ -258,6 +258,9 @@ export default function WatchClient({
   const [autoplay, setAutoplay] = useState<boolean>(() =>
     typeof window !== "undefined" ? localStorage.getItem("sd_autoplay_next") !== "0" : true
   );
+  // Theater mode: hides the sidebar for a distraction-free view (the player
+  // itself is already full-height, so there is nothing wider to grow into).
+  const [theater, setTheater] = useState(false);
   const isLastEp = totalEps > 0 && episode >= totalEps;
 
   // Resolvable rows (anydrama/dramadb with stored episodeIds) never play the
@@ -297,7 +300,7 @@ export default function WatchClient({
 
   // Legacy path: stored URLs / Dailymotion — unchanged for all 88k legacy rows.
   const legacyArea = videoUrl ? (
-    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} synopsis={synopsis} onEnded={onEnded} onNavigate={onNavigate} />
+    <Player dramaId={dramaId} episode={episode} totalEps={totalEps} videoUrl={videoUrl} posterUrl={posterUrl} resumeAt={resumeAt} onEnded={onEnded} onNavigate={onNavigate} onTheaterChange={setTheater} />
   ) : dailymotionEmbed ? (
     <div className="rounded-xl bg-card p-10 text-center">
       <div className="text-4xl mb-4">🎬</div>
@@ -331,9 +334,9 @@ export default function WatchClient({
         format={stream.format}
         posterUrl={posterUrl}
         resumeAt={resumeAt}
-        synopsis={synopsis}
         onEnded={onEnded}
         onNavigate={onNavigate}
+        onTheaterChange={setTheater}
       />
     ) : status === "error" && error ? (
       error.code === "not_resolvable" ? (
@@ -348,7 +351,7 @@ export default function WatchClient({
         />
       )
     ) : (
-      <div className="mx-auto flex aspect-[9/16] max-h-[82vh] w-full max-w-[420px] items-center justify-center rounded-xl bg-black">
+      <div className="mx-auto flex aspect-[9/16] max-h-[100dvh] w-full max-w-[56.25dvh] items-center justify-center rounded-xl bg-black">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-primary" aria-label="Loading video" />
         <span className="ml-3 text-sm font-semibold text-muted">Loading episode…</span>
       </div>
@@ -395,9 +398,16 @@ export default function WatchClient({
   const tags = [...genres, ...tropes];
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-      {/* Player + floating prev/next chevrons */}
+    <div className="grid gap-6 lg:h-dvh lg:grid-cols-[1fr_400px]">
+      {/* Player + floating prev/next chevrons + overlaid back arrow (reference style) */}
       <div className="relative min-w-0">
+        <Link
+          href={`/drama/${encodeURIComponent(dramaId)}`}
+          aria-label="Back to drama"
+          className="absolute left-4 top-4 z-20 flex h-11 w-11 items-center justify-center rounded-full bg-black/60 text-xl text-white transition hover:bg-black/80"
+        >
+          ←
+        </Link>
         {playerArea}
         <div className="absolute right-0 top-1/2 hidden -translate-y-1/2 flex-col gap-3 lg:flex">
           <button
@@ -423,9 +433,10 @@ export default function WatchClient({
         </div>
       </div>
 
-      {/* Sidebar: title, tags, favourite, share, episodes
-          (synopsis lives on the player image now, Hero-style) */}
-      <aside className="min-w-0 space-y-4">
+      {/* Sidebar: title, tags, synopsis, favourite, share, episodes.
+          Hidden in theater mode; scrolls on its own when taller than the viewport. */}
+      {!theater && (
+      <aside className="min-w-0 space-y-4 lg:h-dvh lg:overflow-y-auto lg:py-6 lg:pr-2">
         <div>
           <h1 className="text-xl font-extrabold text-text sm:text-2xl">{dramaTitle}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-1 text-sm">
@@ -469,6 +480,10 @@ export default function WatchClient({
           </div>
         )}
 
+        {synopsis && (
+          <p className="text-sm leading-relaxed text-text/90">{synopsis}</p>
+        )}
+
         <FavoriteButton dramaId={dramaId} />
         <ShareRow dramaId={dramaId} title={dramaTitle} />
 
@@ -505,6 +520,7 @@ export default function WatchClient({
           </div>
         </div>
       </aside>
+      )}
     </div>
   );
 }

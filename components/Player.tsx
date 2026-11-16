@@ -29,10 +29,10 @@ export default function Player({
   format,
   posterUrl,
   resumeAt,
-  synopsis,
   onEnded,
   onNavigate,
   onClose,
+  onTheaterChange,
 }: {
   dramaId: string;
   episode: number;
@@ -42,11 +42,11 @@ export default function Player({
   format?: "hls" | "mp4";
   posterUrl: string | null;
   resumeAt: number;
-  /** Shown Hero-style on the image while paused; hidden while playing. */
-  synopsis?: string | null;
   onEnded: () => void;
   onNavigate: (ep: number) => void;
   onClose?: () => void;
+  /** Theater mode hides the sidebar (the player is already full-height). */
+  onTheaterChange?: (theater: boolean) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -72,7 +72,8 @@ export default function Player({
   const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2];
   const [rate, setRate] = useState(1);
   const rateRef = useRef(1);
-  // Theater mode: widens the frame beyond the default 420px column.
+  // Theater mode: hides the sidebar for a distraction-free view (the player
+  // itself is already full-height, so there is nothing wider to grow into).
   const [theater, setTheater] = useState(false);
   // Picture-in-picture: standard API + Safari webkit fallback. Support is
   // detected after mount (avoids a server/client render mismatch).
@@ -292,9 +293,7 @@ export default function Player({
   return (
     <div
       ref={boxRef}
-      className={`relative mx-auto aspect-[9/16] w-full select-none overflow-hidden rounded-xl bg-black ${
-        theater ? "max-h-[92vh] max-w-[680px]" : "max-h-[82vh] max-w-[420px]"
-      }`}
+      className="relative mx-auto aspect-[9/16] max-h-[100dvh] w-full max-w-[56.25dvh] select-none overflow-hidden bg-black"
       onMouseEnter={() => {
         setControls(true);
         if (hideTimer.current) clearTimeout(hideTimer.current);
@@ -386,15 +385,8 @@ export default function Player({
         </button>
       )}
 
-      {/* synopsis on the image, Hero-style: gradient + text, shown while
-          paused (pre-play poster or paused frame), hidden while playing so
-          it never covers the video or subtitles */}
-      {!playing && synopsis && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-[72px] z-10 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-4 pb-3 pt-8">
-          <p className="line-clamp-3 text-sm leading-relaxed text-white/85">{synopsis}</p>
-        </div>
-      )}
-
+      {/* synopsis lives in the sidebar (always visible), not on the image:
+          the paused-only overlay hid it while playing, so it looked missing */}
       {/* close */}
       {onClose && (
         <button
@@ -465,7 +457,9 @@ export default function Player({
           </div>
           <button
             onClick={() => {
-              setTheater((t) => !t);
+              const next = !theater;
+              setTheater(next);
+              onTheaterChange?.(next);
               pokeControls();
             }}
             className={`rounded p-1.5 hover:bg-white/10 ${theater ? "text-primary" : ""}`}

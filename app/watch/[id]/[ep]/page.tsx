@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getDrama, getProgress, getWatchedEpisodes, browseDramas } from "@/lib/db";
 import { parseEpisodeUrls, parseEpisodeIds, dailymotionId } from "@/lib/types";
@@ -68,17 +67,10 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
     upNext = [];
   }
 
+  // Immersive watch view (see Chrome): full viewport height, no header —
+  // the back arrow is overlaid on the video by WatchClient, like the reference.
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <Link href={`/drama/${encodeURIComponent(drama.id)}`} className="text-sm text-slate-400 hover:text-fuchsia-300">
-          ← {drama.title}
-        </Link>
-        <div className="text-sm font-bold text-slate-300">
-          EP {ep}{totalEps > 0 ? ` / ${totalEps}` : ""}
-        </div>
-      </div>
-
+    <>
       <WatchClient
         dramaId={drama.id}
         dramaTitle={drama.title}
@@ -103,6 +95,6 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
           No video available for this episode yet.
         </div>
       )}
-    </div>
+    </>
   );
 }
