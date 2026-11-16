@@ -12,6 +12,7 @@ import Hero from "@/components/Hero";
 import Rail from "@/components/Rail";
 import { platformLogo, platformInitial, formatPlatform, sortPlatforms } from "@/lib/platforms";
 import { genreIcon, tropeIcon } from "@/lib/tag-icons";
+import { CANONICAL_GENRES, CANONICAL_TROPES } from "@/lib/tag-mapping";
 
 export const dynamic = "force-dynamic";
 
@@ -218,6 +219,9 @@ export default async function Home({
                 );
               })}
             </div>
+            <Link href="/explore#tropes" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+              View all {CANONICAL_TROPES.length} tropes →
+            </Link>
           </section>
 
           {/* Browse by Genre */}
@@ -238,6 +242,9 @@ export default async function Home({
                 );
               })}
             </div>
+            <Link href="/explore#genres" className="mt-3 inline-block text-sm font-semibold text-primary hover:underline">
+              View all {CANONICAL_GENRES.length} genres →
+            </Link>
           </section>
 
           {/* Browse by Platform */}

@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { unstable_cache } from "next/cache";
 import type { DramaRow, WatchProgress } from "./types";
+import { resolveTag, rawLabelsFor } from "./tag-mapping";
 
 const sql = neon(process.env.DATABASE_URL!);
 
@@ -206,82 +207,104 @@ export async function getStats(): Promise<{ total: number; withVideos: number; w
   };
 }
 
-export const getGenres = cached("genres", async (): Promise<{ genre: string; c: number }[]> => {
-  // Genres stored as JSON array in genres column
+/**
+ * Canonical genre/trope counts. Raw labels are resolved through the mapping
+ * (case variants, synonyms, translations -> one canonical; junk dropped; a
+ * concept split across both columns counts once per drama, under its home).
+ * Counts are drama counts, not occurrences.
+ */
+const getTagCounts = cached("tag-counts", async (): Promise<{
+  genres: { genre: string; c: number }[];
+  tropes: { trope: string; c: number }[];
+}> => {
   const rows = (await sql`
-    SELECT genres FROM dramas
-    WHERE COALESCE(is_duplicate,0) = 0 AND genres IS NOT NULL AND genres != ''
-  `) as { genres: string }[];
-  const counter = new Map<string, number>();
+    SELECT genres, tropes FROM dramas
+    WHERE COALESCE(is_duplicate,0) = 0
+      AND ((genres IS NOT NULL AND genres != '')
+        OR (tropes IS NOT NULL AND tropes != ''))
+  `) as { genres: string; tropes: string }[];
+  const gCounter = new Map<string, number>();
+  const tCounter = new Map<string, number>();
   for (const r of rows) {
-    try {
-      const g = JSON.parse(r.genres);
-      if (Array.isArray(g)) {
-        for (const genre of g) {
-          const name = String(genre).trim();
-          if (name) counter.set(name, (counter.get(name) || 0) + 1);
+    // One drama counts once per canonical label, even if it carries the
+    // concept in both its genres and tropes arrays.
+    const gSet = new Set<string>();
+    const tSet = new Set<string>();
+    for (const [col, fallbackHome] of [
+      ["genres", "genre"],
+      ["tropes", "trope"],
+    ] as const) {
+      try {
+        const arr = JSON.parse(r[col]);
+        if (!Array.isArray(arr)) continue;
+        for (const raw of arr) {
+          const resolved = resolveTag(String(raw), fallbackHome);
+          if (!resolved) continue;
+          // Home follows the canonical, not the column it was stored in.
+          const target = resolved.home === "genre" ? gSet : tSet;
+          target.add(resolved.canonical);
         }
-      }
-    } catch { /* skip */ }
+      } catch { /* skip */ }
+    }
+    gSet.forEach((c) => gCounter.set(c, (gCounter.get(c) || 0) + 1));
+    tSet.forEach((c) => tCounter.set(c, (tCounter.get(c) || 0) + 1));
   }
-  return Array.from(counter.entries())
-    .map(([genre, c]) => ({ genre, c }))
-    .sort((a, b) => b.c - a.c);
+  const byCount = (m: Map<string, number>) =>
+    Array.from(m.entries())
+      .sort((a, b) => b[1] - a[1]);
+  return {
+    genres: byCount(gCounter).map(([genre, c]) => ({ genre, c })),
+    tropes: byCount(tCounter).map(([trope, c]) => ({ trope, c })),
+  };
 });
 
-export const getTropes = cached("tropes", async (): Promise<{ trope: string; c: number }[]> => {
-  const rows = (await sql`
-    SELECT tropes FROM dramas
-    WHERE COALESCE(is_duplicate,0) = 0 AND tropes IS NOT NULL AND tropes != ''
-  `) as { tropes: string }[];
-  const counter = new Map<string, number>();
-  for (const r of rows) {
-    try {
-      const t = JSON.parse(r.tropes);
-      if (Array.isArray(t)) {
-        for (const trope of t) {
-          const name = String(trope).trim();
-          if (name) counter.set(name, (counter.get(name) || 0) + 1);
-        }
-      }
-    } catch { /* skip */ }
-  }
-  return Array.from(counter.entries())
-    .map(([trope, c]) => ({ trope, c }))
-    .sort((a, b) => b.c - a.c);
-});
+export const getGenres = async (): Promise<{ genre: string; c: number }[]> =>
+  (await getTagCounts()).genres;
 
-export async function browseByGenre(genre: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
+export const getTropes = async (): Promise<{ trope: string; c: number }[]> =>
+  (await getTagCounts()).tropes;
+
+/** Browse one canonical label: any raw spelling, in either column. */
+async function browseByTag(
+  label: string,
+  fallbackHome: "genre" | "trope",
+  page: number,
+  perPage: number
+): Promise<{ dramas: DramaRow[]; total: number }> {
   const offset = (page - 1) * perPage;
-  // Genres is JSON array; match genre name within it
-  const pattern = `%"${genre.replace(/"/g, '\\"')}"%`;
+  const resolved = resolveTag(label, fallbackHome);
+  // Dropped (junk) labels are not browsable.
+  if (!resolved) return { dramas: [], total: 0 };
+  const rawLabels = rawLabelsFor(resolved.canonical);
+  const params: (string | number)[] = [];
+  const conds: string[] = [];
+  for (const raw of rawLabels) {
+    const pattern = `%"${raw.replace(/"/g, '\\"')}"%`;
+    params.push(pattern);
+    conds.push(`genres ILIKE $${params.length}`);
+    params.push(pattern);
+    conds.push(`tropes ILIKE $${params.length}`);
+  }
+  const where = `COALESCE(is_duplicate,0) = 0 AND (${conds.join(" OR ")})`;
   const [dramas, countRows] = await Promise.all([
     sql.query(
-      `SELECT ${CARD_COLS} FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND genres ILIKE $1 ORDER BY scraped_at DESC LIMIT $2 OFFSET $3`,
-      [pattern, perPage, offset]
+      `SELECT ${CARD_COLS} FROM dramas WHERE ${where} ORDER BY scraped_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+      [...params, perPage, offset]
     ),
     sql.query(
-      `SELECT COUNT(*) AS c FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND genres ILIKE $1`,
-      [pattern]
+      `SELECT COUNT(*) AS c FROM dramas WHERE ${where}`,
+      params
     ),
   ]);
   return { dramas: dramas as DramaRow[], total: Number(countRows[0].c) };
 }
 
+export async function browseByGenre(genre: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
+  return browseByTag(genre, "genre", page, perPage);
+}
+
 export async function browseByTrope(trope: string, page: number, perPage: number): Promise<{ dramas: DramaRow[]; total: number }> {
-  const offset = (page - 1) * perPage;
-  const pattern = `%"${trope.replace(/"/g, '\\"')}"%`;
-  const [dramas, countRows] = await Promise.all([
-    sql.query(
-      `SELECT ${CARD_COLS} FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND tropes ILIKE $1 ORDER BY scraped_at DESC LIMIT $2 OFFSET $3`,
-      [pattern, perPage, offset]
-    ),
-    sql.query(
-      `SELECT COUNT(*) AS c FROM dramas WHERE COALESCE(is_duplicate,0) = 0 AND tropes ILIKE $1`,
-      [pattern]
-    ),
-  ]);
-  return { dramas: dramas as DramaRow[], total: Number(countRows[0].c) };
+  return browseByTag(trope, "trope", page, perPage);
 }
 
 export async function getMarathons(limit = 24): Promise<DramaRow[]> {

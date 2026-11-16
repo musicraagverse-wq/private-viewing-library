@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getGenres, getTropes, getPlatforms, COLLECTIONS } from "@/lib/db";
+import { CANONICAL_GENRES, CANONICAL_TROPES } from "@/lib/tag-mapping";
 import { platformLogo, platformInitial, formatPlatform, sortPlatforms } from "@/lib/platforms";
 import { genreIcon, tropeIcon } from "@/lib/tag-icons";
 
@@ -14,6 +15,12 @@ export default async function ExplorePage() {
     getTropes(),
     getPlatforms(),
   ]);
+  // Canonical labels with no dramas yet (e.g. new VerticalShorts labels)
+  // are part of the catalogue — shown unlinked, with a zero count.
+  const knownGenres = new Set(genres.map((g) => g.genre));
+  const missingGenres = CANONICAL_GENRES.filter((g) => !knownGenres.has(g));
+  const knownTropes = new Set(tropes.map((t) => t.trope));
+  const missingTropes = CANONICAL_TROPES.filter((t) => !knownTropes.has(t));
 
   return (
     <div className="space-y-10">
@@ -60,7 +67,21 @@ export default async function ExplorePage() {
               </Link>
             );
           })}
+          {missingGenres.map((g) => (
+            <span
+              key={g}
+              title="No titles yet — part of the catalogue, fills in as dramas are tagged"
+              className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted opacity-60"
+            >
+              {g} <span className="text-muted">(0)</span>
+            </span>
+          ))}
         </div>
+        {missingGenres.length > 0 && (
+          <p className="mt-3 text-xs text-muted">
+            Faded labels are in the catalogue but have no titles yet.
+          </p>
+        )}
       </section>
 
       <section id="platforms" className="scroll-mt-24">
@@ -107,7 +128,21 @@ export default async function ExplorePage() {
               </Link>
             );
           })}
+          {missingTropes.map((t) => (
+            <span
+              key={t}
+              title="No titles yet — part of the catalogue, fills in as dramas are tagged"
+              className="flex items-center gap-1.5 rounded-full border border-border bg-surface px-4 py-2 text-sm font-semibold text-muted opacity-60"
+            >
+              {t} <span className="text-muted">(0)</span>
+            </span>
+          ))}
         </div>
+        {missingTropes.length > 0 && (
+          <p className="mt-3 text-xs text-muted">
+            Faded labels are in the catalogue but have no titles yet.
+          </p>
+        )}
       </section>
     </div>
   );

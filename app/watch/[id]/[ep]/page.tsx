@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getDrama, getProgress, getWatchedEpisodes, browseDramas } from "@/lib/db";
+import { canonicalizeTagList } from "@/lib/tag-mapping";
 import { parseEpisodeUrls, parseEpisodeIds, dailymotionId } from "@/lib/types";
 import { isResolvableSource } from "@/lib/stream";
 import WatchClient from "./WatchClient";
@@ -38,7 +39,8 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
   const resumeAt = progress && progress.episode === ep ? progress.position_seconds : 0;
   const watchedEpisodes = await getWatchedEpisodes(drama.id);
 
-  // Genres + tropes (same JSON columns the drama detail page reads)
+  // Genres + tropes (same JSON columns the drama detail page reads),
+  // canonicalized so the sidebar shows one clean label per concept.
   let genreList: string[] = [];
   try {
     if (drama.genres) genreList = JSON.parse(drama.genres);
@@ -47,6 +49,22 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
   try {
     if (drama.tropes) tropeList = JSON.parse(drama.tropes);
   } catch {}
+  const resolvedWatchTags = [
+    ...canonicalizeTagList(genreList, "genre"),
+    ...canonicalizeTagList(tropeList, "trope"),
+  ];
+  const seenWatchTags = new Set<string>();
+  const canonWatchTags = resolvedWatchTags.filter((t) => {
+    if (seenWatchTags.has(t.canonical)) return false;
+    seenWatchTags.add(t.canonical);
+    return true;
+  });
+  const canonGenreNames = canonWatchTags
+    .filter((t) => t.home === "genre")
+    .map((t) => t.canonical);
+  const canonTropeNames = canonWatchTags
+    .filter((t) => t.home === "trope")
+    .map((t) => t.canonical);
 
   // "Up next" recommendations for the end-of-drama screen (same platform, with videos)
   let upNext: { id: string; title: string; poster_url: string | null }[] = [];
@@ -78,7 +96,7 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
   try {
     const { getRelatedDramas } = await import("@/lib/db");
     const actorNames = cast.map((c) => c.actor).filter(Boolean);
-    const rel = await getRelatedDramas(drama.id, genreList, tropeList, actorNames, 8);
+    const rel = await getRelatedDramas(drama.id, canonGenreNames, canonTropeNames, actorNames, 8);
     related = rel.map((r) => ({ id: r.id, title: r.title, poster_url: r.poster_url ?? null }));
   } catch {
     related = [];
@@ -101,8 +119,8 @@ export default async function WatchPage({ params }: { params: { id: string; ep: 
         upNext={upNext}
         source={drama.source}
         episodeIds={resolvable ? episodeIds : null}
-        genres={genreList}
-        tropes={tropeList}
+        genres={canonGenreNames}
+        tropes={canonTropeNames}
         synopsis={drama.synopsis}
         cast={cast}
         related={related}

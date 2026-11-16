@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { getDrama, getProgress, getRelatedDramas } from "@/lib/db";
+import { canonicalizeTagList } from "@/lib/tag-mapping";
 import { parseEpisodeUrls, parseEpisodeIds, dailymotionId } from "@/lib/types";
 import { isResolvableSource } from "@/lib/stream";
 import DramaCard from "@/components/DramaCard";
@@ -65,7 +66,9 @@ export default async function DramaDetail({ params }: { params: { id: string } }
     if (drama.cast_data) cast = JSON.parse(drama.cast_data);
   } catch {}
 
-  // Genres + tropes
+  // Genres + tropes — canonicalized: junk dropped, synonyms unified,
+  // each label shown under its one home (a label stored in the other
+  // column still lands in its home section).
   let genreList: string[] = [];
   try {
     if (drama.genres) genreList = JSON.parse(drama.genres);
@@ -74,6 +77,18 @@ export default async function DramaDetail({ params }: { params: { id: string } }
   try {
     if ((drama as any).tropes) tropeList = JSON.parse((drama as any).tropes);
   } catch {}
+  const resolvedTags = [
+    ...canonicalizeTagList(genreList, "genre"),
+    ...canonicalizeTagList(tropeList, "trope"),
+  ];
+  const seenTags = new Set<string>();
+  const canonTags = resolvedTags.filter((t) => {
+    if (seenTags.has(t.canonical)) return false;
+    seenTags.add(t.canonical);
+    return true;
+  });
+  const canonGenres = canonTags.filter((t) => t.home === "genre");
+  const canonTropes = canonTags.filter((t) => t.home === "trope");
 
   // More Like This: shared genres, tropes, cast
   let related: any[] = [];
@@ -81,8 +96,8 @@ export default async function DramaDetail({ params }: { params: { id: string } }
     const { getRelatedDramas } = await import("@/lib/db");
     related = await getRelatedDramas(
       drama.id,
-      genreList,
-      tropeList,
+      canonGenres.map((t) => t.canonical),
+      canonTropes.map((t) => t.canonical),
       cast.map((c) => c.actor).filter(Boolean),
       12
     );
@@ -147,17 +162,17 @@ export default async function DramaDetail({ params }: { params: { id: string } }
       )}
 
       {/* Genres */}
-      {genreList.length > 0 && (
+      {canonGenres.length > 0 && (
         <section aria-label="Genres">
           <h2 className="mb-3 text-xl font-bold">Genres</h2>
           <div className="flex flex-wrap gap-2">
-            {genreList.map((g) => (
+            {canonGenres.map((t) => (
               <Link
-                key={g}
-                href={`/genre/${encodeURIComponent(g)}`}
+                key={t.canonical}
+                href={`/genre/${encodeURIComponent(t.canonical)}`}
                 className="rounded-full border border-border bg-surface px-4 py-1.5 text-sm hover:border-primary hover:text-primary"
               >
-                {g}
+                {t.canonical}
               </Link>
             ))}
           </div>
@@ -165,17 +180,17 @@ export default async function DramaDetail({ params }: { params: { id: string } }
       )}
 
       {/* Tropes */}
-      {tropeList.length > 0 && (
+      {canonTropes.length > 0 && (
         <section aria-label="Tropes">
           <h2 className="mb-3 text-xl font-bold">Tropes</h2>
           <div className="flex flex-wrap gap-2">
-            {tropeList.map((t) => (
+            {canonTropes.map((t) => (
               <Link
-                key={t}
-                href={`/trope/${encodeURIComponent(t)}`}
+                key={t.canonical}
+                href={`/trope/${encodeURIComponent(t.canonical)}`}
                 className="rounded-full border border-border bg-surface px-4 py-1.5 text-sm hover:border-primary hover:text-primary"
               >
-                {t}
+                {t.canonical}
               </Link>
             ))}
           </div>
