@@ -74,7 +74,16 @@ export default function DramaHero({
   /** Episodes the user has watched (checkmarks), from watch_progress. */
   watchedEpisodes: number[];
 }) {
-  const [watching, setWatching] = useState(false);
+  // Resolvable rows: episode count from the map, fresh stream per episode.
+  const resolvable =
+    isResolvableSource(source) &&
+    episodeIds != null &&
+    Object.keys(episodeIds).length > 0;
+  // Open straight into the player layout when the drama has a playable
+  // video — the browse/details view is only the fallback for dramas
+  // with nothing to play (Dailymotion-only, no episodes).
+  const hasVideo = episodeUrls.length > 0 || resolvable;
+  const [watching, setWatching] = useState(hasVideo);
   const [episode, setEpisode] = useState(resumeEp);
   const [showUpNext, setShowUpNext] = useState(false);
   // Backdrop: res.chartdrama.com throws random 403s — hide the blurred
@@ -85,11 +94,6 @@ export default function DramaHero({
     typeof window !== "undefined" ? localStorage.getItem("sd_autoplay_next") !== "0" : true
   );
 
-  // Resolvable rows: episode count from the map, fresh stream per episode.
-  const resolvable =
-    isResolvableSource(source) &&
-    episodeIds != null &&
-    Object.keys(episodeIds).length > 0;
   const totalEps = resolvable
     ? Object.keys(episodeIds).length
     : episodeUrls.length || episodeCount;
