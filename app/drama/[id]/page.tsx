@@ -126,16 +126,10 @@ export default async function DramaDetail({ params }: { params: { id: string } }
         episodeCount={epCount}
         resumeEp={resumeEp}
         hasProgress={!!progress}
-        resumeSeconds={progress && progress.episode === resumeEp ? progress.position_seconds : 0}
         dailymotionId={dmHidden ? null : dm}
         dmHidden={dmHidden}
-        upNext={related.slice(0, 6).map((d: any) => ({ id: d.id, title: d.title, poster_url: d.poster_url }))}
         source={drama.source}
         episodeIds={resolvable ? episodeIds : null}
-        synopsis={drama.synopsis}
-        genres={canonGenres.map((t) => t.canonical)}
-        tropes={canonTropes.map((t) => t.canonical)}
-        cast={cast}
         watchedEpisodes={watched}
       />
 
