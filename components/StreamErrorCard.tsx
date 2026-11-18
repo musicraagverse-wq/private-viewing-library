@@ -34,7 +34,7 @@ export default function StreamErrorCard({
         {error.retryable && (
           <button
             onClick={onRetry}
-            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-extrabold text-black hover:bg-primaryhover"
+            className="rounded-lg bg-primary px-6 py-2.5 text-sm font-extrabold text-white hover:bg-primaryhover"
           >
             ↻ Retry
           </button>

@@ -12,7 +12,7 @@ export default function FavoriteButton({ dramaId }: { dramaId: string }) {
       aria-pressed={isFav}
       className={`flex w-full items-center justify-center gap-2 rounded-lg border py-3 text-sm font-extrabold transition ${
         isFav
-          ? "border-primary bg-primary text-black"
+          ? "border-primary bg-primary text-white"
           : "border-border bg-surface text-text hover:border-primary"
       }`}
     >

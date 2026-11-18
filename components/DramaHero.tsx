@@ -390,7 +390,7 @@ export default function DramaHero({
               {episodeUrls.length > 0 || resolvable ? (
                 <button
                   onClick={() => startWatching(resumeEp)}
-                  className="inline-block rounded-full bg-primary px-8 py-3 text-sm font-bold text-black shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                  className="inline-block rounded-full bg-primary px-8 py-3 text-sm font-bold text-white shadow-lg shadow-primary/30 transition hover:bg-primaryhover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
                 >
                   ▶ {hasProgress ? `Resume EP ${resumeEp}` : "Watch All Episodes"}
                 </button>

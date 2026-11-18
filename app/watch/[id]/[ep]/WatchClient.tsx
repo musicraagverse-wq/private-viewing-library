@@ -131,7 +131,7 @@ export default function WatchClient({
         href={`https://www.dailymotion.com/video/${dailymotionEmbed.split("/").pop()}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-6 inline-block rounded-lg bg-primary px-8 py-3 text-sm font-extrabold text-black hover:bg-primaryhover"
+        className="mt-6 inline-block rounded-lg bg-primary px-8 py-3 text-sm font-extrabold text-white hover:bg-primaryhover"
       >
         ▶ Watch on Dailymotion
       </a>

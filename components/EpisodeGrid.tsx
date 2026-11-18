@@ -63,7 +63,7 @@ export default function EpisodeGrid({
               aria-label={`Episode ${ep}${isCurrent ? " (playing)" : isWatched ? " (watched)" : ""}`}
               className={`relative rounded-lg py-2.5 text-sm font-bold transition ${
                 isCurrent
-                  ? "bg-primary text-black"
+                  ? "bg-primary text-white"
                   : "border border-border bg-surface text-text hover:border-primary"
               }`}
             >

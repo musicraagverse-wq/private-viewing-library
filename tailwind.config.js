@@ -8,18 +8,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Apple TV theme — monochrome minimalism: true black, white brand
-        // accent, Apple system grays. Red kept ONLY as danger token.
-        bg: "#000000",          // primary background — true black
-        surface: "#1C1C1E",     // secondary surface (Apple system gray 6)
-        card: "#2C2C2E",        // elevated surface (Apple system gray 5)
-        border: "#38383A",      // subtle borders (Apple system gray 4)
-        primary: "#FFFFFF",     // brand white — primary actions only
-        primaryhover: "#E8E8ED",// interactive hover — dimmed white
-        primarydark: "#A1A1A6", // deep gray (gradients, logo)
-        danger: "#E42535",      // destructive / error red — never brand
-        text: "#F5F5F7",        // primary text (Apple near-white)
-        muted: "#86868B",       // secondary text (Apple secondary gray)
+        // Crimson Cinema — deep charcoal-black with a warm undertone,
+        // bold crimson brand accent. Gold kept for ratings; danger is a
+        // brighter orange-red so it stays distinct from brand crimson.
+        bg: "#0C0A0B",          // primary background — near-black, warm
+        surface: "#1A1214",     // secondary surface — dark warm maroon
+        card: "#261619",        // elevated surface — warm dark maroon
+        border: "#3D2329",      // subtle borders — muted maroon-gray
+        primary: "#E50914",     // brand crimson — primary actions only
+        primaryhover: "#F6121D",// interactive hover — brighter crimson
+        primarydark: "#8B0A12", // deep crimson (gradients, depth)
+        danger: "#FF453A",      // destructive / error — brighter orange-red
+        text: "#F5F5F7",        // primary text (near-white)
+        muted: "#A8A0A3",       // secondary text (warm gray)
         gold: "#f5c518",
         info: "#5699FF",        // informational blue — sparing use
       },
